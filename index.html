@@ -1,1 +1,145 @@
 
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASAS - Sistem Ujian PKBM</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      color: #172033;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      width: 100%;
+      max-width: 420px;
+      background: white;
+      padding: 32px;
+      border-radius: 18px;
+      box-shadow: 0 10px 35px #0f172a12;
+    }
+    .logo {
+      width: 64px;
+      height: 64px;
+      background: #155eef;
+      color: white;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      font-size: 27px;
+      font-weight: bold;
+      margin: 0 auto 18px;
+    }
+    h1 { text-align: center; margin: 0; font-size: 28px; }
+    .subtitle {
+      text-align: center;
+      color: #64748b;
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 10px 0 26px;
+    }
+    label { display: block; font-size: 14px; font-weight: bold; margin: 16px 0 7px; }
+    input, select {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 9px;
+      font-size: 15px;
+      background: white;
+    }
+    input:focus, select:focus {
+      outline: 2px solid #bfdbfe;
+      border-color: #155eef;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 9px;
+      background: #155eef;
+      color: white;
+      font-weight: bold;
+      font-size: 15px;
+      margin-top: 22px;
+      cursor: pointer;
+    }
+    button:hover { background: #124ac0; }
+    .notice {
+      background: #eff6ff;
+      color: #1e40af;
+      border-radius: 9px;
+      padding: 12px;
+      font-size: 12px;
+      line-height: 1.6;
+      margin-top: 20px;
+    }
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 24px;
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <div class="logo">A</div>
+    <h1>ASAS</h1>
+    <p class="subtitle">
+      Sistem Ujian Berbasis Komputer<br>
+      PKBM Imam Asy-Syafi'i
+    </p>
+
+    <form id="loginForm">
+      <label for="role">Masuk sebagai</label>
+      <select id="role" required>
+        <option value="siswa">Siswa</option>
+        <option value="admin">Administrator</option>
+      </select>
+
+      <label for="username">NIS / NISN / Email Admin</label>
+      <input
+        id="username"
+        type="text"
+        placeholder="Masukkan identitas akun"
+        autocomplete="username"
+        required
+      >
+
+      <label for="password">Kata Sandi</label>
+      <input
+        id="password"
+        type="password"
+        placeholder="Masukkan kata sandi"
+        autocomplete="current-password"
+        required
+      >
+
+      <button type="submit">Masuk ke ASAS</button>
+    </form>
+
+    <div class="notice">
+      Gunakan akun yang diberikan oleh administrator PKBM.
+      Jika mengalami kendala login, hubungi administrator.
+    </div>
+
+    <footer>© 2026 ASAS · PKBM Imam Asy-Syafi'i</footer>
+  </main>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", function(event) {
+      event.preventDefault();
+      alert("Fitur login belum dihubungkan ke server. Silakan lanjutkan konfigurasi ASAS.");
+    });
+  </script>
+</body>
+</html>
+

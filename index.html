@@ -130,17 +130,22 @@
     const dashboard = document.getElementById("dashboard");
     const studentInfo = document.getElementById("studentInfo");
 
-    roleSelect.addEventListener("change", () => {
-      const isAdmin = roleSelect.value === "admin";
-      identifierLabel.textContent = isAdmin ? "Email Administrator" : "NIS atau NISN";
-      identifierInput.placeholder = isAdmin
-        ? "Masukkan email administrator"
-        : "Masukkan NIS atau NISN";
-      identifierInput.autocomplete = isAdmin ? "username" : "username";
-      identifierInput.value = "";
-      passwordInput.value = "";
-      message.textContent = "";
-    });
+
+roleSelect.addEventListener("change", function () {
+  const isAdmin = roleSelect.value === "admin";
+
+  identifierLabel.textContent = isAdmin
+    ? "Email Administrator"
+    : "NIS atau NISN";
+
+  identifierInput.placeholder = isAdmin
+    ? "Masukkan email administrator"
+    : "Masukkan NIS atau NISN";
+
+  identifierInput.value = "";
+  passwordInput.value = "";
+  message.textContent = "";
+});
 
     loginForm.addEventListener("submit", async (event) => {
       event.preventDefault();

@@ -1,252 +1,206 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ASAS - Sistem Ujian</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173b73">
+  <title>ASAS — Sistem Ujian</title>
   <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Arial, sans-serif;
-      background: #f1f5f9;
-      color: #1e293b;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
-
-    .card {
-      width: 100%;
-      max-width: 430px;
-      background: white;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 8px 30px rgba(0,0,0,.08);
-    }
-
-    h1 { margin: 0 0 8px; text-align: center; }
-    .subtitle { text-align: center; color: #64748b; margin-bottom: 25px; }
-
-    label {
-      display: block;
-      font-weight: bold;
-      margin: 15px 0 7px;
-    }
-
-    input, select, button {
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
-      border-radius: 8px;
-    }
-
-    input, select {
-      border: 1px solid #cbd5e1;
-      background: white;
-    }
-
-    button {
-      border: 0;
-      background: #2563eb;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 20px;
-    }
-
-    button:disabled { opacity: .6; cursor: wait; }
-
-    .secondary { background: #475569; }
-    .message { margin-top: 16px; font-size: 14px; overflow-wrap: anywhere; }
-    .hidden { display: none !important; }
-    .info { background: #f8fafc; padding: 15px; border-radius: 8px; line-height: 1.8; }
+    :root { color-scheme: light; --blue:#174ea6; --navy:#173b73; --bg:#f3f6fb; --text:#182230; --muted:#64748b; --border:#d8e0ec; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; padding:24px; display:grid; place-items:center; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+    .card { width:min(100%,440px); background:#fff; border:1px solid #e6ebf2; border-radius:18px; padding:30px; box-shadow:0 14px 38px rgba(23,59,115,.09); }
+    .brand { display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:8px; }
+    .mark { display:grid; place-items:center; width:44px; height:44px; border-radius:12px; background:var(--navy); color:#fff; font-weight:800; font-size:22px; }
+    h1 { margin:0; font-size:29px; letter-spacing:.5px; color:var(--navy); }
+    .subtitle { text-align:center; color:var(--muted); margin:6px 0 24px; }
+    label { display:block; font-size:14px; font-weight:650; margin:15px 0 7px; }
+    input, select, button { width:100%; min-height:46px; border-radius:9px; font:inherit; }
+    input, select { border:1px solid var(--border); padding:10px 12px; background:#fff; color:var(--text); }
+    input:focus, select:focus { outline:3px solid #dbeafe; border-color:#6695e8; }
+    button { border:0; padding:11px 14px; background:var(--blue); color:white; font-weight:700; cursor:pointer; margin-top:20px; }
+    button:disabled { opacity:.65; cursor:wait; }
+    .notice { min-height:20px; margin:14px 0 0; font-size:14px; line-height:1.5; overflow-wrap:anywhere; }
+    .notice.error { color:#b42318; }
+    .notice.success { color:#067647; }
+    .hidden { display:none !important; }
+    .details { background:#f8fafc; border:1px solid #e8edf4; border-radius:10px; padding:15px; margin-top:18px; line-height:1.8; overflow-wrap:anywhere; }
+    .details p { margin:3px 0; }
+    .hint { font-size:12px; color:var(--muted); text-align:center; margin:20px 0 0; line-height:1.5; }
   </style>
 </head>
 <body>
   <main class="card">
     <section id="loginPanel">
-      <h1>ASAS</h1>
+      <div class="brand"><div class="mark" aria-hidden="true">A</div><h1>ASAS</h1></div>
       <p class="subtitle">Sistem Ujian Berbasis Web</p>
 
       <form id="loginForm">
-        <label for="role">Jenis Login</label>
-        <select id="role" required>
+        <label for="role">Jenis akun</label>
+        <select id="role" name="role" required>
           <option value="siswa">Siswa</option>
           <option value="admin">Administrator</option>
         </select>
 
-        <label for="identifier" id="identifierLabel">NIS atau NISN</label>
-        <input
-          id="identifier"
-          type="text"
-          autocomplete="username"
-          placeholder="Masukkan NIS atau NISN"
-          required
-        >
+        <label id="identifierLabel" for="identifier">NIS atau NISN</label>
+        <input id="identifier" name="identifier" type="text" autocomplete="username"
+               placeholder="Masukkan NIS atau NISN" required>
 
-        <label for="password">Kata Sandi</label>
-        <input
-          id="password"
-          type="password"
-          autocomplete="current-password"
-          placeholder="Masukkan kata sandi"
-          required
-        >
+        <label for="password">Kata sandi</label>
+        <input id="password" name="password" type="password"
+               autocomplete="current-password" placeholder="Masukkan kata sandi" required>
 
         <button id="submitButton" type="submit">Masuk</button>
+        <p id="message" class="notice" role="status" aria-live="polite"></p>
       </form>
-
-      <p id="message" class="message" role="status" aria-live="polite"></p>
+      <p class="hint">Gunakan akun yang diberikan administrator PKBM.</p>
     </section>
 
     <section id="dashboard" class="hidden">
-      <h1>ASAS</h1>
-      <p class="subtitle">Login berhasil</p>
-      <div id="studentInfo" class="info"></div>
-      <button id="logoutButton" class="secondary" type="button">Keluar</button>
+      <div class="brand"><div class="mark" aria-hidden="true">A</div><h1>ASAS</h1></div>
+      <p class="subtitle" id="welcome">Login berhasil</p>
+      <div class="details" id="accountDetails"></div>
+      <p class="notice">Login berhasil, tetapi halaman ini belum berisi fitur ujian atau pengelolaan data.</p>
+      <button id="logoutButton" type="button">Keluar</button>
     </section>
   </main>
 
   <script>
-    const SUPABASE_URL =
-      "https://mllgkysdhobmbvudpehx.supabase.co";
+    "use strict";
 
-    // Masukkan Publishable key yang sebelumnya sudah digunakan website.
-    const SUPABASE_PUBLISHABLE_KEY = "GANTI_DENGAN_PUBLISHABLE_KEY_ANDA";
+    // Konfigurasi publik Supabase. Jangan pernah menaruh service-role/secret key di sini.
+    const SUPABASE_URL = "https://mllgkysdhobmbvudpehx.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_4W8K2AIVm9DGa-4L53W0pw_VlXO3XTW";
 
-    const loginForm = document.getElementById("loginForm");
-    const roleSelect = document.getElementById("role");
-    const identifierInput = document.getElementById("identifier");
-    const passwordInput = document.getElementById("password");
-    const identifierLabel = document.getElementById("identifierLabel");
-    const submitButton = document.getElementById("submitButton");
-    const message = document.getElementById("message");
-    const loginPanel = document.getElementById("loginPanel");
-    const dashboard = document.getElementById("dashboard");
-    const studentInfo = document.getElementById("studentInfo");
+    const $ = (id) => document.getElementById(id);
+    const form = $("loginForm");
+    const roleSelect = $("role");
+    const identifierInput = $("identifier");
+    const passwordInput = $("password");
+    const identifierLabel = $("identifierLabel");
+    const submitButton = $("submitButton");
+    const message = $("message");
+    const loginPanel = $("loginPanel");
+    const dashboard = $("dashboard");
 
+    function setMessage(text, kind) {
+      message.textContent = text || "";
+      message.className = "notice" + (kind ? " " + kind : "");
+    }
 
-roleSelect.addEventListener("change", function () {
-  const isAdmin = roleSelect.value === "admin";
+    function updateLoginFields() {
+      const isAdmin = roleSelect.value === "admin";
+      identifierLabel.textContent = isAdmin ? "Email administrator" : "NIS atau NISN";
+      identifierInput.placeholder = isAdmin
+        ? "Masukkan email administrator"
+        : "Masukkan NIS atau NISN";
+      identifierInput.type = isAdmin ? "email" : "text";
+      identifierInput.autocomplete = "username";
+      identifierInput.value = "";
+      passwordInput.value = "";
+      setMessage("", "");
+    }
 
-  identifierLabel.textContent = isAdmin
-    ? "Email Administrator"
-    : "NIS atau NISN";
+    roleSelect.addEventListener("change", updateLoginFields);
 
-  identifierInput.placeholder = isAdmin
-    ? "Masukkan email administrator"
-    : "Masukkan NIS atau NISN";
+    function addDetail(container, label, value) {
+      const p = document.createElement("p");
+      const strong = document.createElement("strong");
+      strong.textContent = label + ": ";
+      p.append(strong, document.createTextNode(String(value ?? "-")));
+      container.appendChild(p);
+    }
 
-  identifierInput.value = "";
-  passwordInput.value = "";
-  message.textContent = "";
-});
-
-    loginForm.addEventListener("submit", async (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
 
-      // Ambil nilai formulir SEBELUM memilih jenis login.
+      // Ambil seluruh nilai sebelum percabangan supaya tidak ada temporal-dead-zone error.
       const identifier = identifierInput.value.trim();
       const password = passwordInput.value;
       const role = roleSelect.value;
 
-      if (
-        !SUPABASE_PUBLISHABLE_KEY ||
-        SUPABASE_PUBLISHABLE_KEY === "GANTI_DENGAN_PUBLISHABLE_KEY_ANDA"
-      ) {
-        message.textContent = "Publishable key belum diisi.";
+      if (!identifier || !password) {
+        setMessage("Isi identitas dan kata sandi terlebih dahulu.", "error");
+        return;
+      }
+
+      if (!SUPABASE_PUBLISHABLE_KEY || SUPABASE_PUBLISHABLE_KEY === "sb_publishable_4W8K2AIVm9DGa-4L53W0pw_VlXO3XTW") {
+        setMessage("Konfigurasi belum lengkap: masukkan Supabase Publishable key pada file index.html.", "error");
         return;
       }
 
       submitButton.disabled = true;
       submitButton.textContent = "Memeriksa...";
-      message.textContent = "";
+      setMessage("", "");
 
       try {
         const endpoint = role === "admin" ? "admin-login" : "student-login";
-
         const payload = role === "admin"
-          ? { email: identifier, password }
-          : { identifier, password };
+          ? { email: identifier, password: password }
+          : { identifier: identifier, password: password };
 
-        const response = await fetch(
-          SUPABASE_URL + "/functions/v1/" + endpoint,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "apikey": sb_publishable_4W8K2AIVm9DGa-4L53W0pw_VlXO3XTW
-            },
-            body: JSON.stringify(payload)
-          }
-        );
+        const response = await fetch(SUPABASE_URL + "/functions/v1/" + endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_PUBLISHABLE_KEY
+          },
+          body: JSON.stringify(payload)
+        });
 
-        const result = await response.json();
+        let result;
+        try {
+          result = await response.json();
+        } catch {
+          throw new Error("Server mengirim jawaban yang tidak bisa dibaca. Periksa status Edge Function.");
+        }
 
-        if (!response.ok || !result.ok) {
-          message.textContent =
-            result.message || "Login gagal. Periksa data login Anda.";
+        if (!response.ok || !result || result.ok !== true) {
+          setMessage((result && result.message) || "Login gagal. Periksa identitas dan kata sandi.", "error");
           return;
         }
 
         if (!result.session) {
-          message.textContent = "Login belum menghasilkan sesi. Silakan coba lagi.";
+          setMessage("Server belum mengembalikan sesi login. Periksa konfigurasi fungsi login.", "error");
           return;
         }
 
-        sessionStorage.setItem(
-          "asas_session",
-          JSON.stringify(result.session)
-        );
+        sessionStorage.setItem("asas_session", JSON.stringify(result.session));
+        sessionStorage.setItem("asas_role", role);
 
-        const profile = result.user || result.student || {};
-        const nama = profile.full_name || profile.name || identifier;
-        const nis = profile.nis || "-";
-        const nisn = profile.nisn || "-";
-
-        studentInfo.replaceChildren();
-
-        const addLine = (label, value) => {
-          const line = document.createElement("p");
-          const strong = document.createElement("strong");
-          strong.textContent = label + ": ";
-          line.append(strong, document.createTextNode(String(value)));
-          studentInfo.appendChild(line);
-        };
-
-        addLine("Nama", nama);
-        addLine("Peran", role === "admin" ? "Administrator" : "Siswa");
-
+        const user = result.user || result.student || {};
+        const details = $("accountDetails");
+        details.replaceChildren();
+        $("welcome").textContent = "Selamat datang, " + (user.full_name || user.name || identifier) + "!";
+        addDetail(details, "Jenis akun", role === "admin" ? "Administrator" : "Siswa");
+        addDetail(details, "Nama", user.full_name || user.name || identifier);
         if (role === "siswa") {
-          addLine("NIS", nis);
-          addLine("NISN", nisn);
+          addDetail(details, "NIS", user.nis || "-");
+          addDetail(details, "NISN", user.nisn || "-");
         }
 
         loginPanel.classList.add("hidden");
         dashboard.classList.remove("hidden");
       } catch (error) {
-        message.textContent =
-          "Tidak dapat terhubung ke server. Periksa koneksi internet dan coba lagi.";
         console.error("ASAS login error:", error);
+        setMessage(error instanceof Error ? error.message : "Koneksi gagal. Coba lagi.", "error");
       } finally {
         submitButton.disabled = false;
         submitButton.textContent = "Masuk";
       }
     });
 
-    document.getElementById("logoutButton").addEventListener("click", () => {
+    $("logoutButton").addEventListener("click", () => {
       sessionStorage.removeItem("asas_session");
+      sessionStorage.removeItem("asas_role");
       dashboard.classList.add("hidden");
       loginPanel.classList.remove("hidden");
-      loginForm.reset();
-      roleSelect.dispatchEvent(new Event("change"));
-      message.textContent = "";
+      form.reset();
+      updateLoginFields();
+      setMessage("Anda sudah keluar.", "success");
     });
+
+    updateLoginFields();
   </script>
 </body>
 </html>

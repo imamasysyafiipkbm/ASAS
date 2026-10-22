@@ -174,18 +174,36 @@
       message.textContent = "";
 
       if (document.getElementById("role").value === "admin") {
-        message.className = "error";
-        message.textContent =
-          "Login administrator belum tersedia. Silakan masuk sebagai siswa.";
-        return;
-      }
+  const email = identifier.trim();
 
-      if (SUPABASE_PUBLISHABLE_KEY === "ISI_PUBLISHABLE_KEY_DI_SINI") {
-        message.className = "error";
-        message.textContent =
-          "Publishable key belum diisi. Selesaikan konfigurasi Supabase terlebih dahulu.";
-        return;
-      }
+  const response = await fetch(
+    SUPABASE_URL + "/functions/v1/admin-login",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_PUBLISHABLE_KEY
+      },
+      body: JSON.stringify({
+        email: email,
+        password: password
+      })
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok || !result.ok) {
+    document.getElementById("message").textContent =
+      result.message || "Login Admin gagal.";
+    return;
+  }
+
+  sessionStorage.setItem("asas_session", JSON.stringify(result.session));
+  document.getElementById("message").textContent =
+    "Login Admin berhasil. Selamat datang, " + result.user.full_name + "!";
+  return;
+}
 
       const identifier =
         document.getElementById("identifier").value.trim();

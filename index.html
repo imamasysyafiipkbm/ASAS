@@ -3,50 +3,53 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ASAS - Sistem Ujian PKBM</title>
   <style>
     * { box-sizing: border-box; }
     body {
       margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
       font-family: Arial, sans-serif;
       background: #f1f5f9;
       color: #172033;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
     }
     .container {
       width: 100%;
       max-width: 420px;
       background: white;
-      padding: 32px;
+      padding: 30px;
       border-radius: 18px;
       box-shadow: 0 10px 35px #0f172a12;
     }
     .logo {
-      width: 64px;
-      height: 64px;
-      background: #155eef;
-      color: white;
+      width: 62px;
+      height: 62px;
       display: grid;
       place-items: center;
+      margin: 0 auto 16px;
       border-radius: 16px;
-      font-size: 27px;
+      background: #155eef;
+      color: white;
+      font-size: 28px;
       font-weight: bold;
-      margin: 0 auto 18px;
     }
-    h1 { text-align: center; margin: 0; font-size: 28px; }
+    h1 { text-align: center; margin: 0; }
     .subtitle {
       text-align: center;
       color: #64748b;
-      font-size: 14px;
       line-height: 1.6;
-      margin: 10px 0 26px;
+      margin-bottom: 26px;
     }
-    label { display: block; font-size: 14px; font-weight: bold; margin: 16px 0 7px; }
+    label {
+      display: block;
+      font-weight: bold;
+      font-size: 14px;
+      margin: 16px 0 7px;
+    }
     input, select {
       width: 100%;
       padding: 13px;
@@ -55,91 +58,198 @@
       font-size: 15px;
       background: white;
     }
-    input:focus, select:focus {
-      outline: 2px solid #bfdbfe;
-      border-color: #155eef;
-    }
     button {
       width: 100%;
+      margin-top: 22px;
       padding: 14px;
-      border: none;
+      border: 0;
       border-radius: 9px;
       background: #155eef;
       color: white;
       font-weight: bold;
       font-size: 15px;
-      margin-top: 22px;
       cursor: pointer;
     }
-    button:hover { background: #124ac0; }
+    button:disabled { opacity: .6; cursor: wait; }
     .notice {
+      margin-top: 18px;
+      padding: 12px;
       background: #eff6ff;
       color: #1e40af;
       border-radius: 9px;
-      padding: 12px;
-      font-size: 12px;
-      line-height: 1.6;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    #message {
+      margin-top: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+    .success { color: #166534; }
+    .error { color: #b91c1c; }
+    #dashboard { display: none; }
+    .student-card {
       margin-top: 20px;
+      padding: 16px;
+      background: #f8fafc;
+      border-radius: 12px;
+      line-height: 1.8;
     }
     footer {
       text-align: center;
-      font-size: 12px;
       color: #94a3b8;
+      font-size: 12px;
       margin-top: 24px;
     }
   </style>
 </head>
 <body>
   <main class="container">
-    <div class="logo">A</div>
-    <h1>ASAS</h1>
-    <p class="subtitle">
-      Sistem Ujian Berbasis Komputer<br>
-      PKBM Imam Asy-Syafi'i
-    </p>
+    <section id="login">
+      <div class="logo">A</div>
+      <h1>ASAS</h1>
+      <p class="subtitle">
+        Sistem Ujian Berbasis Komputer<br>
+        PKBM Imam Asy-Syafi'i
+      </p>
 
-    <form id="loginForm">
-      <label for="role">Masuk sebagai</label>
-      <select id="role" required>
-        <option value="siswa">Siswa</option>
-        <option value="admin">Administrator</option>
-      </select>
+      <form id="loginForm">
+        <label for="role">Masuk sebagai</label>
+        <select id="role">
+          <option value="siswa">Siswa</option>
+          <option value="admin">Administrator</option>
+        </select>
 
-      <label for="username">NIS / NISN / Email Admin</label>
-      <input
-        id="username"
-        type="text"
-        placeholder="Masukkan identitas akun"
-        autocomplete="username"
-        required
-      >
+        <label for="identifier">NIS atau NISN</label>
+        <input id="identifier" autocomplete="username"
+          placeholder="Masukkan NIS atau NISN" required>
 
-      <label for="password">Kata Sandi</label>
-      <input
-        id="password"
-        type="password"
-        placeholder="Masukkan kata sandi"
-        autocomplete="current-password"
-        required
-      >
+        <label for="password">Kata sandi</label>
+        <input id="password" type="password"
+          autocomplete="current-password"
+          placeholder="Masukkan kata sandi" required>
 
-      <button type="submit">Masuk ke ASAS</button>
-    </form>
+        <button id="submitButton" type="submit">Masuk ke ASAS</button>
+      </form>
 
-    <div class="notice">
-      Gunakan akun yang diberikan oleh administrator PKBM.
-      Jika mengalami kendala login, hubungi administrator.
-    </div>
+      <div id="message" role="status" aria-live="polite"></div>
 
-    <footer>© 2026 ASAS · PKBM Imam Asy-Syafi'i</footer>
+      <div class="notice">
+        Gunakan akun yang diberikan administrator PKBM.
+        Login administrator belum diaktifkan pada tahap ini.
+      </div>
+
+      <footer>© 2026 ASAS · PKBM Imam Asy-Syafi'i</footer>
+    </section>
+
+    <section id="dashboard">
+      <div class="logo">A</div>
+      <h1>ASAS</h1>
+      <p class="subtitle">Login siswa berhasil</p>
+      <div class="student-card" id="studentInfo"></div>
+      <button id="logoutButton" type="button">Keluar</button>
+      <div class="notice">
+        Ini dashboard awal. Jadwal dan pengerjaan ujian akan ditambahkan
+        setelah tahap login selesai.
+      </div>
+    </section>
   </main>
 
   <script>
-    document.getElementById("loginForm").addEventListener("submit", function(event) {
+    const SUPABASE_URL =
+      "https://mllgkysdhobmbvudpehx.supabase.co";
+
+    // Ganti teks di bawah dengan Publishable key dari Supabase.
+    const SUPABASE_PUBLISHABLE_KEY =
+      "sb_publishable_4W8K2AIVm9DGa-4L53W0pw_VlXO3XTW";
+
+    const form = document.getElementById("loginForm");
+    const button = document.getElementById("submitButton");
+    const message = document.getElementById("message");
+
+    form.addEventListener("submit", async function(event) {
       event.preventDefault();
-      alert("Fitur login belum dihubungkan ke server. Silakan lanjutkan konfigurasi ASAS.");
+      message.className = "";
+      message.textContent = "";
+
+      if (document.getElementById("role").value === "admin") {
+        message.className = "error";
+        message.textContent =
+          "Login administrator belum tersedia. Silakan masuk sebagai siswa.";
+        return;
+      }
+
+      if (SUPABASE_PUBLISHABLE_KEY === "ISI_PUBLISHABLE_KEY_DI_SINI") {
+        message.className = "error";
+        message.textContent =
+          "Publishable key belum diisi. Selesaikan konfigurasi Supabase terlebih dahulu.";
+        return;
+      }
+
+      const identifier =
+        document.getElementById("identifier").value.trim();
+      const password =
+        document.getElementById("password").value;
+
+      button.disabled = true;
+      button.textContent = "Memeriksa akun...";
+
+      try {
+        const result = await fetch(
+          SUPABASE_URL + "/functions/v1/student-login",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": SUPABASE_PUBLISHABLE_KEY
+            },
+            body: JSON.stringify({ identifier, password })
+          }
+        );
+
+        const data = await result.json();
+
+        if (!result.ok || !data.ok || !data.session || !data.user) {
+          throw new Error(data.message || "Login gagal.");
+        }
+
+        // Simpan sesi hanya selama tab browser digunakan.
+        sessionStorage.setItem(
+          "asas_session",
+          JSON.stringify(data.session)
+        );
+
+        document.getElementById("studentInfo").textContent =
+          "Nama: " + data.user.full_name +
+          "\nNIS: " + data.user.nis +
+          "\nNISN: " + (data.user.nisn || "-");
+
+        document.getElementById("studentInfo").style.whiteSpace =
+          "pre-line";
+        document.getElementById("login").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+        document.getElementById("password").value = "";
+      } catch (error) {
+        message.className = "error";
+        message.textContent =
+          error.message === "Failed to fetch"
+            ? "Tidak dapat terhubung ke server. Periksa konfigurasi fungsi Supabase."
+            : error.message;
+      } finally {
+        button.disabled = false;
+        button.textContent = "Masuk ke ASAS";
+      }
+    });
+
+    document.getElementById("logoutButton").addEventListener("click", () => {
+      sessionStorage.removeItem("asas_session");
+      document.getElementById("dashboard").style.display = "none";
+      document.getElementById("login").style.display = "block";
+      document.getElementById("identifier").value = "";
+      document.getElementById("password").value = "";
+      message.textContent = "";
     });
   </script>
 </body>
 </html>
-

@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASAS — Sistem Ujian</title>
+<style>
+:root{--navy:#12345a;--blue:#1769d2;--bg:#f3f6fb;--text:#172033;--muted:#667085;--line:#e4eaf2;--white:#fff}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}.hidden{display:none!important}
+.login-wrap{min-height:100vh;display:grid;place-items:center;padding:20px}.login-card{width:min(430px,100%);background:#fff;padding:30px;border-radius:18px;box-shadow:0 12px 34px #0d244014}.brand{text-align:center;color:var(--navy);font-size:32px;font-weight:800;letter-spacing:1px;margin:0}.sub{text-align:center;color:var(--muted);margin:8px 0 26px}.field-label{display:block;font-weight:700;margin:15px 0 7px}input,select{width:100%;padding:12px 13px;border:1px solid #ccd5e0;border-radius:9px;font-size:15px;background:white}button{font:inherit;cursor:pointer}.primary{width:100%;padding:12px;border:0;border-radius:9px;background:var(--blue);color:white;font-weight:700;margin-top:20px}.primary:disabled{opacity:.6}.msg{min-height:22px;margin-top:13px;font-size:14px}.error{color:#b42318}.ok{color:#067647}
+.app{min-height:100vh}.topbar{height:68px;background:var(--white);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 25px;position:sticky;top:0;z-index:5}.top-brand{font-size:23px;font-weight:800;color:var(--navy);letter-spacing:.5px}.top-right{display:flex;align-items:center;gap:14px;font-size:14px}.role-pill{background:#eaf2ff;color:#1757a6;padding:7px 10px;border-radius:20px;font-weight:700}.logout{border:1px solid #d0d9e5;background:white;border-radius:8px;padding:9px 12px;color:#344054;font-weight:700}.layout{display:grid;grid-template-columns:235px minmax(0,1fr);min-height:calc(100vh - 68px)}.sidebar{background:var(--navy);padding:22px 14px;color:#fff}.side-label{font-size:11px;text-transform:uppercase;letter-spacing:1.3px;color:#b9c9dc;padding:0 12px;margin:8px 0 12px}.nav-btn{display:flex;align-items:center;gap:12px;width:100%;border:0;border-radius:9px;padding:12px;color:#e8f0fa;background:transparent;text-align:left;margin:3px 0;font-size:14px}.nav-btn:hover,.nav-btn.active{background:#244a73;color:#fff}.nav-icon{width:22px;text-align:center;font-size:17px}.main{padding:28px;min-width:0}.crumb{font-size:13px;color:var(--muted);margin-bottom:8px}.page-title{font-size:27px;margin:0 0 8px;color:#142c49}.page-desc{color:var(--muted);margin:0 0 24px;line-height:1.5}.welcome-box{background:linear-gradient(120deg,#153b68,#1b65ad);color:white;padding:24px;border-radius:15px;margin-bottom:22px}.welcome-box h2{margin:0 0 8px;font-size:23px}.welcome-box p{margin:0;color:#e0ecfb;line-height:1.6}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin-bottom:22px}.stat{background:#fff;border:1px solid var(--line);border-radius:13px;padding:18px}.stat .label{font-size:13px;color:var(--muted);margin-bottom:10px}.stat .value{font-size:25px;font-weight:800;color:var(--navy)}.stat .hint{font-size:12px;color:#7b8798;margin-top:7px}.panel{background:#fff;border:1px solid var(--line);border-radius:13px;padding:20px;margin-bottom:18px}.panel h3{margin:0 0 13px;font-size:17px}.panel p{color:#596579;line-height:1.65;margin:0}.quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.quick-btn{border:1px solid var(--line);background:#fff;border-radius:11px;padding:15px;text-align:left;color:var(--text)}.quick-btn:hover{border-color:#9bbce8;background:#f8fbff}.quick-btn strong{display:block;margin:8px 0 5px}.quick-btn span{font-size:13px;color:var(--muted);line-height:1.45}.empty-note{background:#f8fafc;border:1px dashed #cbd5e1;padding:18px;border-radius:10px;color:#667085;line-height:1.6}.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}.toolbar input{flex:1;min-width:200px}.secondary{border:1px solid #cbd5e1;background:#fff;border-radius:9px;padding:11px 14px;font-weight:700;color:#344054}.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}table{width:100%;border-collapse:collapse;min-width:720px;background:#fff}th,td{padding:12px 13px;text-align:left;border-bottom:1px solid var(--line);font-size:13px}th{background:#f8fafc;color:#475467;font-size:12px;white-space:nowrap}tbody tr:last-child td{border-bottom:0}.status{display:inline-block;padding:4px 8px;border-radius:20px;background:#ecfdf3;color:#027a48;font-size:12px;font-weight:700}.status-off{background:#fef3f2;color:#b42318}.table-meta{color:var(--muted);font-size:13px;margin:0 0 12px}.footer{color:#8792a2;font-size:12px;text-align:center;padding:15px 0 4px}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.layout{grid-template-columns:190px minmax(0,1fr)}.main{padding:22px}}
+@media(max-width:620px){.topbar{padding:0 14px;height:60px}.top-brand{font-size:20px}.top-right{gap:7px}.top-user{display:none}.layout{display:block}.sidebar{padding:9px;display:flex;gap:5px;overflow-x:auto;position:sticky;top:60px;z-index:4}.side-label{display:none}.nav-btn{width:auto;flex:0 0 auto;margin:0;padding:10px;border-radius:8px}.nav-btn .nav-text{white-space:nowrap}.nav-icon{display:none}.main{padding:18px 13px}.page-title{font-size:24px}.stats{gap:9px}.stat{padding:13px}.stat .value{font-size:22px}.quick-grid{grid-template-columns:1fr}.welcome-box{padding:19px}.role-pill{font-size:12px}.logout{padding:8px}}
+</style>
+</head>
+<body>
+<div id="loginScreen" class="login-wrap">
+  <main class="login-card">
+    <h1 class="brand">ASAS</h1><p class="sub">Sistem Ujian Berbasis Web</p>
+    <form id="loginForm">
+      <label class="field-label" for="role">Jenis Login</label>
+      <select id="role"><option value="siswa">Siswa</option><option value="admin">Administrator</option></select>
+      <label class="field-label" id="identifierLabel" for="identifier">NIS atau NISN</label>
+      <input id="identifier" type="text" placeholder="Masukkan NIS atau NISN" autocomplete="username" required>
+      <label class="field-label" for="password">Kata Sandi</label>
+      <input id="password" type="password" placeholder="Masukkan kata sandi" autocomplete="current-password" required>
+      <button id="loginButton" class="primary" type="submit">Masuk</button>
+      <div id="message" class="msg" role="status" aria-live="polite"></div>
+    </form>
+  </main>
+</div>
+<div id="appScreen" class="app hidden">
+  <header class="topbar"><div class="top-brand">ASAS</div><div class="top-right"><span id="rolePill" class="role-pill">Administrator</span><span id="topUser" class="top-user">Admin ASAS</span><button id="logoutButton" class="logout" type="button">Keluar</button></div></header>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="side-label">Menu Utama</div>
+      <button class="nav-btn active" data-page="dashboard"><span class="nav-icon">⌂</span><span class="nav-text">Dashboard</span></button>
+      <button class="nav-btn" data-page="students"><span class="nav-icon">♙</span><span class="nav-text">Data Siswa</span></button>
+      <button class="nav-btn" data-page="classes"><span class="nav-icon">▦</span><span class="nav-text">Data Kelas</span></button>
+      <button class="nav-btn" data-page="subjects"><span class="nav-icon">▤</span><span class="nav-text">Mata Pelajaran</span></button>
+      <button class="nav-btn" data-page="questions"><span class="nav-icon">✎</span><span class="nav-text">Bank Soal</span></button>
+      <button class="nav-btn" data-page="exams"><span class="nav-icon">▣</span><span class="nav-text">Ujian</span></button>
+      <button class="nav-btn" data-page="schedule"><span class="nav-icon">◷</span><span class="nav-text">Jadwal Ujian</span></button>
+      <button class="nav-btn" data-page="results"><span class="nav-icon">▥</span><span class="nav-text">Hasil / Nilai</span></button>
+      <button class="nav-btn" data-page="settings"><span class="nav-icon">⚙</span><span class="nav-text">Pengaturan</span></button>
+    </aside>
+    <main class="main" id="mainContent"></main>
+  </div>
+</div>
+<script>
+const SUPABASE_URL = "https://mllgkysdhobmbvudpehx.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_4W8K2AIVm9DGa-4L53W0pw_VlXO3XTW";
+const form = document.getElementById("loginForm");
+const role = document.getElementById("role");
+const identifier = document.getElementById("identifier");
+const password = document.getElementById("password");
+const identifierLabel = document.getElementById("identifierLabel");
+const message = document.getElementById("message");
+const loginButton = document.getElementById("loginButton");
+let currentUser = null;
+let currentRole = null;
+function setMessage(text, type="") { message.textContent = text; message.className = "msg " + type; }
+role.addEventListener("change", function () {
+  const isAdmin = role.value === "admin";
+  identifierLabel.textContent = isAdmin ? "Email Administrator" : "NIS atau NISN";
+  identifier.placeholder = isAdmin ? "Masukkan email administrator" : "Masukkan NIS atau NISN";
+  identifier.type = isAdmin ? "email" : "text";
+  identifier.autocomplete = isAdmin ? "username" : "username";
+  setMessage("");
+});
+form.addEventListener("submit", async function (event) {
+  event.preventDefault();
+  const enteredId = identifier.value.trim();
+  const enteredPassword = password.value;
+  const selectedRole = role.value;
+  if (!enteredId || !enteredPassword) { setMessage("Identitas dan kata sandi wajib diisi.", "error"); return; }
+  loginButton.disabled = true; loginButton.textContent = "Memeriksa..."; setMessage("");
+  try {
+    const functionName = selectedRole === "admin" ? "admin-login" : "student-login";
+    const requestBody = selectedRole === "admin" ? { email: enteredId, password: enteredPassword } : { identifier: enteredId, password: enteredPassword };
+    const response = await fetch(SUPABASE_URL + "/functions/v1/" + functionName, {
+      method: "POST", headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY }, body: JSON.stringify(requestBody)
+    });
+    const result = await response.json();
+    if (!response.ok || !result.ok) { setMessage(result.message || "Login gagal. Periksa identitas dan kata sandi.", "error"); return; }
+    if (!result.session) { setMessage("Login berhasil tetapi sesi tidak diterima. Silakan coba lagi.", "error"); return; }
+    sessionStorage.setItem("asas_session", JSON.stringify(result.session));
+    sessionStorage.setItem("asas_role", selectedRole);
+    currentRole = selectedRole; currentUser = result.user || result.student || {};
+    sessionStorage.setItem("asas_user", JSON.stringify(currentUser));
+    showApp();
+  } catch (error) {
+    console.error(error); setMessage("Tidak dapat terhubung ke server. Periksa koneksi internet lalu coba lagi.", "error");
+  } finally { loginButton.disabled = false; loginButton.textContent = "Masuk"; }
+});
+const pages = {
+ dashboard: {title:"Dashboard",desc:"Ringkasan sistem ujian ASAS.",body:()=>`<section class="welcome-box"><h2>Selamat datang, ${escapeHtml(getUserName())}!</h2><p>Kelola data pendidikan, bank soal, jadwal, dan hasil ujian dari satu tempat. Menu sudah disiapkan. Ringkasan awal ditampilkan sesuai data yang sudah dibuat; angka akan dibuat otomatis dari database pada tahap berikutnya.</p></section><section class="stats"><div class="stat"><div class="label">Tahun Ajaran Aktif</div><div class="value" style="font-size:24px">2026/2027</div><div class="hint">Semester Ganjil</div></div><div class="stat"><div class="label">Kelas</div><div class="value">12</div><div class="hint">Paket A, B, dan C · data awal</div></div><div class="stat"><div class="label">Mata Pelajaran</div><div class="value">46</div><div class="hint">Penempatan sesuai tingkat · data awal</div></div><div class="stat"><div class="label">Siswa</div><div class="value">1</div><div class="hint">Termasuk data Siswa Uji ASAS</div></div></section><section class="panel"><h3>Akses Cepat</h3><div class="quick-grid"><button class="quick-btn" data-go="students">♙<strong>Data Siswa</strong><span>Kelola data siswa dan impor Excel/CSV.</span></button><button class="quick-btn" data-go="questions">✎<strong>Bank Soal</strong><span>Siapkan dan kelompokkan soal ujian.</span></button><button class="quick-btn" data-go="exams">▣<strong>Buat Ujian</strong><span>Atur soal, durasi, dan ketentuan ujian.</span></button></div></section>`},
+ students:{title:"Data Siswa",desc:"Daftar siswa yang diambil langsung dari database Supabase.",body:()=>`<section class="panel"><div class="toolbar"><input id="studentSearch" type="search" placeholder="Cari NIS, NISN, atau nama siswa..."><button id="reloadStudents" class="secondary" type="button">Muat Ulang</button></div><p id="studentMeta" class="table-meta">Menghubungkan ke database...</p><div id="studentTableArea" class="empty-note">Sedang mengambil data siswa dari Supabase.</div></section>`},
+ classes:{title:"Data Kelas",desc:"Daftar kelas Paket A, Paket B, dan Paket C yang diambil dari Supabase.",body:()=>`<section class="panel"><div class="toolbar"><input id="classSearch" type="search" placeholder="Cari nama kelas atau program..."><button id="reloadClasses" class="secondary" type="button">Muat Ulang</button></div><p id="classMeta" class="table-meta">Menghubungkan ke database...</p><div id="classTableArea" class="empty-note">Sedang mengambil data kelas dari Supabase.</div></section>`},
+ subjects:{title:"Mata Pelajaran",desc:"Kelola mata pelajaran sesuai program dan tingkat kelas.",body:()=>placeholder("Daftar mata pelajaran belum dimuat dari database.","Tahap berikutnya: tampilkan mata pelajaran per Paket A/B/C dan tingkat kelas.")},
+ questions:{title:"Bank Soal",desc:"Simpan dan susun soal untuk digunakan pada ujian.",body:()=>placeholder("Bank soal belum ditampilkan dari database.","Tahap berikutnya: tambah soal pilihan ganda, benar/salah, jawaban singkat, dan esai; termasuk impor soal.")},
+ exams:{title:"Ujian",desc:"Buat ujian dan tentukan soal yang digunakan.",body:()=>placeholder("Belum ada daftar ujian yang dimuat pada tampilan ini.","Tahap berikutnya: nama ujian, mata pelajaran, kelas peserta, durasi, pengacakan soal, dan pengaturan nilai.")},
+ schedule:{title:"Jadwal Ujian",desc:"Atur kapan ujian dibuka dan ditutup.",body:()=>placeholder("Jadwal ujian belum dimuat dari database.","Tahap berikutnya: tanggal, jam mulai, jam selesai, dan status ujian.")},
+ results:{title:"Hasil / Nilai",desc:"Pantau hasil ujian dan rekap nilai siswa.",body:()=>placeholder("Hasil ujian belum ditampilkan karena data nilai belum dimuat.","Tahap berikutnya: nilai otomatis, pemeriksaan esai, rekap per kelas, dan ekspor Excel.")},
+ settings:{title:"Pengaturan",desc:"Pengaturan dasar sistem ASAS.",body:()=>placeholder("Pengaturan sistem belum tersedia pada versi tampilan ini.","Pengaturan tahun ajaran, semester, profil admin, dan keamanan akan ditambahkan bertahap.")}
+};
+function escapeHtml(value){return String(value ?? "").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function getUserName(){return currentUser?.full_name || currentUser?.name || currentUser?.email || "Admin ASAS";}
+function placeholder(line1,line2){return `<section class="panel"><h3>Informasi</h3><div class="empty-note">${escapeHtml(line1)}<br><br>${escapeHtml(line2)}</div></section>`;}
+function renderPage(pageKey){const page=pages[pageKey]||pages.dashboard;document.querySelectorAll(".nav-btn").forEach(btn=>btn.classList.toggle("active",btn.dataset.page===pageKey));document.getElementById("mainContent").innerHTML=`<div class="crumb">ASAS / ${escapeHtml(page.title)}</div><h1 class="page-title">${escapeHtml(page.title)}</h1><p class="page-desc">${escapeHtml(page.desc)}</p>${page.body()}<div class="footer">ASAS · Sistem Ujian Berbasis Web</div>`;document.querySelectorAll("[data-go]").forEach(btn=>btn.addEventListener("click",()=>renderPage(btn.dataset.go)));if(pageKey==="students"&&currentRole==="admin")setupStudentsPage();if(pageKey==="classes"&&currentRole==="admin")setupClassesPage();}
+let cachedStudents=[];
+function getAccessToken(){try{return JSON.parse(sessionStorage.getItem("asas_session")||"{}").access_token||"";}catch{return "";}}
+async function loadStudents(){
+ const area=document.getElementById("studentTableArea"),meta=document.getElementById("studentMeta");
+ if(!area||!meta)return;
+ const token=getAccessToken();
+ if(!token){area.className="empty-note";area.textContent="Sesi login tidak ditemukan. Silakan keluar lalu masuk kembali.";meta.textContent="";return;}
+ area.className="empty-note";area.textContent="Sedang mengambil data siswa dari Supabase...";meta.textContent="Memuat data...";
+ try{
+  const url=SUPABASE_URL+"/rest/v1/students?select=id,nis,nisn,full_name,gender,status,education_level,school_class,phone&order=full_name.asc";
+  const response=await fetch(url,{headers:{"apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":"Bearer "+token,"Accept":"application/json"}});
+  const data=await response.json().catch(()=>[]);
+  if(!response.ok){throw new Error(data.message||data.details||("HTTP "+response.status));}
+  cachedStudents=Array.isArray(data)?data:[];drawStudentsTable();
+ }catch(error){console.error("Gagal memuat siswa:",error);area.className="empty-note";area.textContent="Data siswa belum dapat dimuat. Pesan server: "+error.message;meta.textContent="Periksa kebijakan akses (RLS) tabel students untuk akun administrator.";}
+}
+function drawStudentsTable(){
+ const area=document.getElementById("studentTableArea"),meta=document.getElementById("studentMeta"),search=document.getElementById("studentSearch");if(!area||!meta)return;
+ const term=(search?.value||"").trim().toLowerCase();const rows=cachedStudents.filter(s=>[s.nis,s.nisn,s.full_name,s.education_level,s.school_class].some(v=>String(v||"").toLowerCase().includes(term)));
+ meta.textContent=`Menampilkan ${rows.length} dari ${cachedStudents.length} siswa`;
+ if(!rows.length){area.className="empty-note";area.textContent=cachedStudents.length?"Tidak ada siswa yang cocok dengan pencarian.":"Belum ada data siswa di database.";return;}
+ area.className="table-wrap";area.innerHTML=`<table><thead><tr><th>No.</th><th>NIS</th><th>NISN</th><th>Nama Lengkap</th><th>Program</th><th>Kelas</th><th>Status</th></tr></thead><tbody>${rows.map((s,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(s.nis||"—")}</td><td>${escapeHtml(s.nisn||"—")}</td><td><strong>${escapeHtml(s.full_name||"—")}</strong></td><td>${escapeHtml(s.education_level||"—")}</td><td>${escapeHtml(s.school_class||"—")}</td><td><span class="status ${String(s.status||"").toLowerCase()==="aktif"?"":"status-off"}">${escapeHtml(s.status||"—")}</span></td></tr>`).join("")}</tbody></table>`;
+}
+function setupStudentsPage(){const search=document.getElementById("studentSearch"),reload=document.getElementById("reloadStudents");if(search)search.addEventListener("input",drawStudentsTable);if(reload)reload.addEventListener("click",loadStudents);loadStudents();}
+
+let cachedClasses=[];
+async function loadClasses(){
+ const area=document.getElementById("classTableArea"),meta=document.getElementById("classMeta");if(!area||!meta)return;
+ const token=getAccessToken();if(!token){area.className="empty-note";area.textContent="Sesi login tidak ditemukan. Silakan keluar lalu masuk kembali.";meta.textContent="";return;}
+ area.className="empty-note";area.textContent="Sedang mengambil data kelas dari Supabase...";meta.textContent="Memuat data...";
+ try{
+  const response=await fetch(SUPABASE_URL+"/rest/v1/classes?select=*&order=created_at.asc",{headers:{"apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":"Bearer "+token,"Accept":"application/json"}});
+  const data=await response.json().catch(()=>[]);if(!response.ok)throw new Error(data.message||data.details||("HTTP "+response.status));
+  cachedClasses=Array.isArray(data)?data:[];drawClassesTable();
+ }catch(error){console.error("Gagal memuat kelas:",error);area.className="empty-note";area.textContent="Data kelas belum dapat dimuat. Pesan server: "+error.message;meta.textContent="Periksa kebijakan akses (RLS) tabel classes untuk akun administrator.";}
+}
+function drawClassesTable(){
+ const area=document.getElementById("classTableArea"),meta=document.getElementById("classMeta"),search=document.getElementById("classSearch");if(!area||!meta)return;
+ const term=(search?.value||"").trim().toLowerCase();const rows=cachedClasses.filter(row=>Object.values(row).some(v=>String(v??"").toLowerCase().includes(term)));
+ meta.textContent=`Menampilkan ${rows.length} dari ${cachedClasses.length} kelas`;
+ if(!rows.length){area.className="empty-note";area.textContent=cachedClasses.length?"Tidak ada kelas yang cocok dengan pencarian.":"Belum ada data kelas di database.";return;}
+ const keys=Object.keys(rows[0]);const preferred=["name","class_name","nama_kelas","program_code","grade_number","grade","level","education_level","academic_year_id","status"];const ordered=[...preferred.filter(k=>keys.includes(k)),...keys.filter(k=>!preferred.includes(k)&&!['id','created_at','updated_at'].includes(k))];
+ const labels={name:"Nama Kelas",class_name:"Nama Kelas",nama_kelas:"Nama Kelas",program_code:"Program",grade_number:"Tingkat",grade:"Tingkat",level:"Jenjang",education_level:"Jenjang",academic_year_id:"ID Tahun Ajaran",status:"Status"};
+ area.className="table-wrap";area.innerHTML=`<table><thead><tr><th>No.</th>${ordered.map(k=>`<th>${escapeHtml(labels[k]||k.replaceAll("_"," "))}</th>`).join("")}</tr></thead><tbody>${rows.map((row,i)=>`<tr><td>${i+1}</td>${ordered.map(k=>`<td>${escapeHtml(row[k]===null||row[k]===""?"—":typeof row[k]==="object"?JSON.stringify(row[k]):row[k])}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+function setupClassesPage(){const search=document.getElementById("classSearch"),reload=document.getElementById("reloadClasses");if(search)search.addEventListener("input",drawClassesTable);if(reload)reload.addEventListener("click",loadClasses);loadClasses();}
+
+function showApp(){document.getElementById("loginScreen").classList.add("hidden");document.getElementById("appScreen").classList.remove("hidden");document.getElementById("rolePill").textContent=currentRole==="admin"?"Administrator":"Siswa";document.getElementById("topUser").textContent=getUserName();const sidebar=document.getElementById("sidebar");sidebar.querySelectorAll("[data-page]").forEach(btn=>{btn.classList.toggle("hidden",currentRole!=="admin"&&btn.dataset.page!=="dashboard");});renderPage("dashboard");}
+document.querySelectorAll(".nav-btn").forEach(btn=>btn.addEventListener("click",()=>renderPage(btn.dataset.page)));
+document.getElementById("logoutButton").addEventListener("click",function(){sessionStorage.removeItem("asas_session");sessionStorage.removeItem("asas_role");sessionStorage.removeItem("asas_user");currentUser=null;currentRole=null;document.getElementById("appScreen").classList.add("hidden");document.getElementById("loginScreen").classList.remove("hidden");form.reset();role.dispatchEvent(new Event("change"));setMessage("Anda telah keluar dari sistem.","ok");});
+role.dispatchEvent(new Event("change"));
+
+// Pulihkan sesi yang tersimpan ketika halaman di-refresh.
+(function restoreSession() {
+  try {
+    const savedSession = sessionStorage.getItem("asas_session");
+    const savedRole = sessionStorage.getItem("asas_role");
+    const savedUser = sessionStorage.getItem("asas_user");
+    if (!savedSession || !savedRole) return;
+
+    const parsedSession = JSON.parse(savedSession);
+    if (!parsedSession || !parsedSession.access_token) {
+      sessionStorage.removeItem("asas_session");
+      sessionStorage.removeItem("asas_role");
+      sessionStorage.removeItem("asas_user");
+      return;
+    }
+
+    // Jika waktu kedaluwarsa tersedia dan sudah lewat, minta login kembali.
+    const expiresAt = parsedSession.expires_at;
+    if (expiresAt && Date.now() >= Number(expiresAt) * 1000) {
+      sessionStorage.removeItem("asas_session");
+      sessionStorage.removeItem("asas_role");
+      sessionStorage.removeItem("asas_user");
+      return;
+    }
+
+    currentRole = savedRole;
+    currentUser = savedUser ? JSON.parse(savedUser) : {};
+    showApp();
+  } catch (error) {
+    console.error("Tidak dapat memulihkan sesi ASAS:", error);
+    sessionStorage.removeItem("asas_session");
+    sessionStorage.removeItem("asas_role");
+    sessionStorage.removeItem("asas_user");
+  }
+})();
+</script>
+</body>
+</html>

@@ -171,13 +171,19 @@ function drawSubjectsTable(){
  const area=document.getElementById("subjectTableArea"),meta=document.getElementById("subjectMeta");if(!area||!meta)return;
  const search=(document.getElementById("subjectSearch")?.value||"").trim().toLowerCase();
  const program=document.getElementById("subjectProgram")?.value||"";const gradeValue=document.getElementById("subjectGrade")?.value||"";const grade=gradeValue?Number(gradeValue):null;
- const getProgram=r=>String(r.program_code??r.program??r.paket??"").replace(/^Paket\s*/i,"").toUpperCase();
+ const normalizeProgram=value=>{
+  const v=String(value??"").trim().toUpperCase().replace(/[^A-Z0-9]/g,"");
+  if(["A","PA","PAKETA","PAKETA1","SD"].includes(v)||v.includes("PAKETA"))return "A";
+  if(["B","PB","PAKETB","SMP"].includes(v)||v.includes("PAKETB"))return "B";
+  if(["C","PC","PAKETC","SMA"].includes(v)||v.includes("PAKETC"))return "C";
+  return v;
+ };
+ const getProgram=r=>normalizeProgram(r.program_code??r.program??r.paket??r.education_level??r.level??"");
  const getMin=r=>Number(r.grade_min??r.grade_number??r.grade??r.grade_start??r.min_grade??0);
  const getMax=r=>Number(r.grade_max??r.grade_number??r.grade??r.grade_end??r.max_grade??getMin(r));
  const rows=cachedSubjects.filter(r=>{
-  const name=String(r.name??r.subject_name??r.nama_mata_pelajaran??"").toLowerCase();
   const matchesSearch=!search||Object.values(r).some(v=>String(v??"").toLowerCase().includes(search));
-  const rp=getProgram(r);const matchesProgram=!program||rp===program||rp===`PAKET ${program}`;
+  const rp=getProgram(r);const matchesProgram=!program||rp===program;
   const min=getMin(r),max=getMax(r);const matchesGrade=!grade||(!min&&!max)||(grade>=min&&grade<=max);
   return matchesSearch&&matchesProgram&&matchesGrade;
  });

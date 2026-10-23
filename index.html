@@ -87,6 +87,7 @@ form.addEventListener("submit", async function (event) {
     sessionStorage.setItem("asas_session", JSON.stringify(result.session));
     sessionStorage.setItem("asas_role", selectedRole);
     currentRole = selectedRole; currentUser = result.user || result.student || {};
+    sessionStorage.setItem("asas_user", JSON.stringify(currentUser));
     showApp();
   } catch (error) {
     console.error(error); setMessage("Tidak dapat terhubung ke server. Periksa koneksi internet lalu coba lagi.", "error");
@@ -109,8 +110,44 @@ function placeholder(line1,line2){return `<section class="panel"><h3>Informasi</
 function renderPage(pageKey){const page=pages[pageKey]||pages.dashboard;document.querySelectorAll(".nav-btn").forEach(btn=>btn.classList.toggle("active",btn.dataset.page===pageKey));document.getElementById("mainContent").innerHTML=`<div class="crumb">ASAS / ${escapeHtml(page.title)}</div><h1 class="page-title">${escapeHtml(page.title)}</h1><p class="page-desc">${escapeHtml(page.desc)}</p>${page.body()}<div class="footer">ASAS · Sistem Ujian Berbasis Web</div>`;document.querySelectorAll("[data-go]").forEach(btn=>btn.addEventListener("click",()=>renderPage(btn.dataset.go)));}
 function showApp(){document.getElementById("loginScreen").classList.add("hidden");document.getElementById("appScreen").classList.remove("hidden");document.getElementById("rolePill").textContent=currentRole==="admin"?"Administrator":"Siswa";document.getElementById("topUser").textContent=getUserName();const sidebar=document.getElementById("sidebar");sidebar.querySelectorAll("[data-page]").forEach(btn=>{btn.classList.toggle("hidden",currentRole!=="admin"&&btn.dataset.page!=="dashboard");});renderPage("dashboard");}
 document.querySelectorAll(".nav-btn").forEach(btn=>btn.addEventListener("click",()=>renderPage(btn.dataset.page)));
-document.getElementById("logoutButton").addEventListener("click",function(){sessionStorage.removeItem("asas_session");sessionStorage.removeItem("asas_role");currentUser=null;currentRole=null;document.getElementById("appScreen").classList.add("hidden");document.getElementById("loginScreen").classList.remove("hidden");form.reset();role.dispatchEvent(new Event("change"));setMessage("Anda telah keluar dari sistem.","ok");});
+document.getElementById("logoutButton").addEventListener("click",function(){sessionStorage.removeItem("asas_session");sessionStorage.removeItem("asas_role");sessionStorage.removeItem("asas_user");currentUser=null;currentRole=null;document.getElementById("appScreen").classList.add("hidden");document.getElementById("loginScreen").classList.remove("hidden");form.reset();role.dispatchEvent(new Event("change"));setMessage("Anda telah keluar dari sistem.","ok");});
 role.dispatchEvent(new Event("change"));
+
+// Pulihkan sesi yang tersimpan ketika halaman di-refresh.
+(function restoreSession() {
+  try {
+    const savedSession = sessionStorage.getItem("asas_session");
+    const savedRole = sessionStorage.getItem("asas_role");
+    const savedUser = sessionStorage.getItem("asas_user");
+    if (!savedSession || !savedRole) return;
+
+    const parsedSession = JSON.parse(savedSession);
+    if (!parsedSession || !parsedSession.access_token) {
+      sessionStorage.removeItem("asas_session");
+      sessionStorage.removeItem("asas_role");
+      sessionStorage.removeItem("asas_user");
+      return;
+    }
+
+    // Jika waktu kedaluwarsa tersedia dan sudah lewat, minta login kembali.
+    const expiresAt = parsedSession.expires_at;
+    if (expiresAt && Date.now() >= Number(expiresAt) * 1000) {
+      sessionStorage.removeItem("asas_session");
+      sessionStorage.removeItem("asas_role");
+      sessionStorage.removeItem("asas_user");
+      return;
+    }
+
+    currentRole = savedRole;
+    currentUser = savedUser ? JSON.parse(savedUser) : {};
+    showApp();
+  } catch (error) {
+    console.error("Tidak dapat memulihkan sesi ASAS:", error);
+    sessionStorage.removeItem("asas_session");
+    sessionStorage.removeItem("asas_role");
+    sessionStorage.removeItem("asas_user");
+  }
+})();
 </script>
 </body>
 </html>

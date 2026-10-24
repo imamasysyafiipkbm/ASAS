@@ -274,7 +274,7 @@ function setupQuestionEntry(){
 async function insertQuestionWithOptions(row){
  const bankId=document.getElementById("questionTargetBank")?.value;if(!bankId)throw new Error("Pilih bank soal terlebih dahulu.");
  const points=Number(String(row.points??"1").replace(",","."));if(!Number.isFinite(points)||points<=0)throw new Error("Bobot Nilai harus berupa angka lebih dari 0.");
- const questionPayload={question_bank_id:bankId,question_text:row.question,question_type:"multiple_choice",points};
+ const questionPayload={question_bank_id:bankId,question_text:row.question,question_type:"pilihan_ganda",points};
  const qResponse=await fetch(SUPABASE_URL+"/rest/v1/questions?select=*",{method:"POST",headers:getRestHeaders({"Content-Type":"application/json","Prefer":"return=representation"}),body:JSON.stringify(questionPayload)});
  const qData=await qResponse.json().catch(()=>({}));if(!qResponse.ok)throw new Error(qData.message||qData.details||qData.hint||"Gagal menyimpan soal (HTTP "+qResponse.status+").");
  const q=Array.isArray(qData)?qData[0]:qData;if(!q?.id)throw new Error("Soal tersimpan tetapi ID soal tidak diterima.");

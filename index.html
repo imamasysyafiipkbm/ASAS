@@ -278,7 +278,7 @@ async function insertQuestionWithOptions(row){
  const qResponse=await fetch(SUPABASE_URL+"/rest/v1/questions?select=*",{method:"POST",headers:getRestHeaders({"Content-Type":"application/json","Prefer":"return=representation"}),body:JSON.stringify(questionPayload)});
  const qData=await qResponse.json().catch(()=>({}));if(!qResponse.ok)throw new Error(qData.message||qData.details||qData.hint||"Gagal menyimpan soal (HTTP "+qResponse.status+").");
  const q=Array.isArray(qData)?qData[0]:qData;if(!q?.id)throw new Error("Soal tersimpan tetapi ID soal tidak diterima.");
- const opts=["A","B","C","D","E"].map((label,i)=>({question_id:q.id,option_label:label,option_text:row[label],is_correct:label===row.key,sort_order:i+1}));
+ const opts=["A","B","C","D","E"].map((label,i)=>({question_id:q.id,option_label:label,option_text:row[label],is_correct:label===row.key}));
  const oResponse=await fetch(SUPABASE_URL+"/rest/v1/question_options",{method:"POST",headers:getRestHeaders({"Content-Type":"application/json","Prefer":"return=minimal"}),body:JSON.stringify(opts)});
  const oData=await oResponse.json().catch(()=>({}));if(!oResponse.ok)throw new Error("Soal sudah tersimpan, tetapi pilihan jawaban gagal disimpan: "+(oData.message||oData.details||oData.hint||("HTTP "+oResponse.status))+". Catat soal ini untuk diperiksa sebelum mencoba ulang.");
 }

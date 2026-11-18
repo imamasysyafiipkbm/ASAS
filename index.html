@@ -429,23 +429,31 @@ Lanjutkan?`);
 let cachedStudents=[];
 function readSavedSession(){try{return JSON.parse(localStorage.getItem("asas_session")||"null");}catch{return null;}}
 function saveRefreshedSession(session){localStorage.setItem("asas_session",JSON.stringify(session));}
+function tokenExpiry(session){
+ const explicit=Number(session?.expires_at||0);if(explicit>0)return explicit;
+ try{const part=String(session?.access_token||"").split(".")[1];if(!part)return 0;const normalized=part.replace(/-/g,"+").replace(/_/g,"/");return Number(JSON.parse(atob(normalized)).exp||0);}catch{return 0;}
+}
+async function verifyAccessToken(token){
+ const response=await fetch(SUPABASE_URL+"/auth/v1/user",{headers:{"apikey":SUPABASE_PUBLISHABLE_KEY,"Authorization":"Bearer "+token}});
+ if(response.ok)return {valid:true,user:await response.json().catch(()=>null)};
+ return {valid:false,status:response.status};
+}
 let sessionRefreshPromise=null;
 async function refreshAuthSession(force=false){
  const runRefresh=async()=>{
-  // Baca ulang setelah memperoleh kunci agar tab lain tidak memakai refresh token lama.
+  // Selalu baca ulang token setelah lock diperoleh agar tab tidak memakai refresh token lama.
   let session=readSavedSession();
   if(!session?.refresh_token)throw new Error("Refresh token tidak tersedia. Silakan login kembali.");
-  const expiresAt=Number(session.expires_at||0);
+  const expiresAt=tokenExpiry(session);
   if(!force&&session.access_token&&expiresAt*1000>Date.now()+120000)return session;
   const response=await fetch(SUPABASE_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"apikey":SUPABASE_PUBLISHABLE_KEY,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:session.refresh_token})});
   const data=await response.json().catch(()=>({}));
-  if(!response.ok||!data.access_token||!data.refresh_token)throw new Error(data.msg||data.message||"Sesi berakhir. Silakan login kembali.");
+  if(!response.ok||!data.access_token||!data.refresh_token)throw new Error(data.msg||data.message||data.error_description||"Sesi tidak dapat diperbarui.");
   const refreshed={...session,...data,expires_at:data.expires_at||Math.floor(Date.now()/1000)+Number(data.expires_in||3600)};
   saveRefreshedSession(refreshed);return refreshed;
  };
  if(sessionRefreshPromise)return sessionRefreshPromise;
  sessionRefreshPromise=(async()=>{
-  // Web Locks mencegah dua tab memperbarui refresh token secara bersamaan.
   if(navigator.locks?.request)return navigator.locks.request("asas-auth-refresh",runRefresh);
   return runRefresh();
  })().finally(()=>{sessionRefreshPromise=null;});
@@ -1217,27 +1225,42 @@ window.addEventListener("storage",event=>{
   document.getElementById("loginScreen").classList.remove("hidden");
   form.reset();role.dispatchEvent(new Event("change"));
   setMessage("Sesi telah berakhir atau Anda keluar dari tab lain.","ok");
+ }else if(event.key==="asas_session"&&event.newValue){
+  // Login dari tab lain langsung dikenali pada tab ini.
+  const savedRole=localStorage.getItem("asas_role"),savedUser=localStorage.getItem("asas_user");
+  if(savedRole){currentRole=savedRole;try{currentUser=savedUser?JSON.parse(savedUser):{};}catch{currentUser={};}showApp();}
  }
 });
 role.dispatchEvent(new Event("change"));
 
-// Pulihkan sesi bersama antar-tab; perbarui access token yang kedaluwarsa memakai refresh token.
+// Pulihkan sesi: validasi access token terlebih dahulu. Jangan menghapus sesi hanya
+// karena refresh gagal sementara atau koneksi sedang bermasalah.
 (async function restoreSession() {
-  try {
-    const savedSession = readSavedSession();
-    const savedRole = localStorage.getItem("asas_role");
-    const savedUser = localStorage.getItem("asas_user");
-    if (!savedSession || !savedRole) return;
-    if (!savedSession.access_token || !savedSession.refresh_token) throw new Error("Data sesi tidak lengkap");
-    await refreshAuthSession(false);
-    currentRole = savedRole;
-    currentUser = savedUser ? JSON.parse(savedUser) : {};
+  const savedSession=readSavedSession();
+  const savedRole=localStorage.getItem("asas_role");
+  const savedUser=localStorage.getItem("asas_user");
+  if(!savedSession||!savedRole)return;
+  try{
+    if(!savedSession.access_token||!savedSession.refresh_token)throw new Error("Data sesi tidak lengkap");
+    let check=await verifyAccessToken(savedSession.access_token);
+    let usableSession=savedSession;
+    if(!check.valid&&[401,403].includes(check.status)){
+      usableSession=await refreshAuthSession(true);
+      check=await verifyAccessToken(usableSession.access_token);
+    }
+    if(!check.valid){
+      if([401,403].includes(check.status))throw Object.assign(new Error("Sesi login sudah tidak berlaku. Silakan login kembali."),{invalidSession:true});
+      throw new Error("Server autentikasi belum dapat dijangkau. Sesi tetap disimpan; muat ulang halaman saat koneksi normal.");
+    }
+    if(tokenExpiry(usableSession))saveRefreshedSession({...usableSession,expires_at:tokenExpiry(usableSession)});
+    currentRole=savedRole;
+    currentUser=savedUser?JSON.parse(savedUser):(check.user||{});
     showApp();
-  } catch (error) {
-    console.warn("Sesi tidak dapat dipulihkan:", error.message);
-    localStorage.removeItem("asas_session");
-    localStorage.removeItem("asas_role");
-    localStorage.removeItem("asas_user");
+    keepSessionFresh();
+  }catch(error){
+    console.warn("Sesi tidak dapat dipulihkan:",error.message);
+    if(error.invalidSession){localStorage.removeItem("asas_session");localStorage.removeItem("asas_role");localStorage.removeItem("asas_user");}
+    setMessage(error.message||"Sesi belum dapat dipulihkan.","error");
   }
 })();
 </script>

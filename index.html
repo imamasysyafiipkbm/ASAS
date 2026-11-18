@@ -206,10 +206,10 @@ form.addEventListener("submit", async function (event) {
     const result = await response.json();
     if (!response.ok || !result.ok) { setMessage(result.message || "Login gagal. Periksa identitas dan kata sandi.", "error"); return; }
     if (!result.session) { setMessage("Login berhasil tetapi sesi tidak diterima. Silakan coba lagi.", "error"); return; }
-    sessionStorage.setItem("asas_session", JSON.stringify(result.session));
-    sessionStorage.setItem("asas_role", selectedRole);
+    localStorage.setItem("asas_session", JSON.stringify(result.session));
+    localStorage.setItem("asas_role", selectedRole);
     currentRole = selectedRole; currentUser = result.user || result.student || {};
-    sessionStorage.setItem("asas_user", JSON.stringify(currentUser));
+    localStorage.setItem("asas_user", JSON.stringify(currentUser));
     showApp();
   } catch (error) {
     console.error(error); setMessage("Tidak dapat terhubung ke server. Periksa koneksi internet lalu coba lagi.", "error");
@@ -427,21 +427,27 @@ Lanjutkan?`);
 }
 
 let cachedStudents=[];
-function readSavedSession(){try{return JSON.parse(sessionStorage.getItem("asas_session")||"null");}catch{return null;}}
-function saveRefreshedSession(session){sessionStorage.setItem("asas_session",JSON.stringify(session));}
+function readSavedSession(){try{return JSON.parse(localStorage.getItem("asas_session")||"null");}catch{return null;}}
+function saveRefreshedSession(session){localStorage.setItem("asas_session",JSON.stringify(session));}
 let sessionRefreshPromise=null;
 async function refreshAuthSession(force=false){
- const session=readSavedSession();
- if(!session?.refresh_token)throw new Error("Refresh token tidak tersedia. Silakan login kembali.");
- const expiresAt=Number(session.expires_at||0);
- if(!force&&session.access_token&&expiresAt*1000>Date.now()+120000)return session;
- if(sessionRefreshPromise)return sessionRefreshPromise;
- sessionRefreshPromise=(async()=>{
+ const runRefresh=async()=>{
+  // Baca ulang setelah memperoleh kunci agar tab lain tidak memakai refresh token lama.
+  let session=readSavedSession();
+  if(!session?.refresh_token)throw new Error("Refresh token tidak tersedia. Silakan login kembali.");
+  const expiresAt=Number(session.expires_at||0);
+  if(!force&&session.access_token&&expiresAt*1000>Date.now()+120000)return session;
   const response=await fetch(SUPABASE_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"apikey":SUPABASE_PUBLISHABLE_KEY,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:session.refresh_token})});
   const data=await response.json().catch(()=>({}));
   if(!response.ok||!data.access_token||!data.refresh_token)throw new Error(data.msg||data.message||"Sesi berakhir. Silakan login kembali.");
   const refreshed={...session,...data,expires_at:data.expires_at||Math.floor(Date.now()/1000)+Number(data.expires_in||3600)};
   saveRefreshedSession(refreshed);return refreshed;
+ };
+ if(sessionRefreshPromise)return sessionRefreshPromise;
+ sessionRefreshPromise=(async()=>{
+  // Web Locks mencegah dua tab memperbarui refresh token secara bersamaan.
+  if(navigator.locks?.request)return navigator.locks.request("asas-auth-refresh",runRefresh);
+  return runRefresh();
  })().finally(()=>{sessionRefreshPromise=null;});
  return sessionRefreshPromise;
 }
@@ -897,7 +903,7 @@ async function loadRecoveryDetail(id,stMap=new Map(),seMap=new Map()){
   }catch(e){box.className="msg error";box.textContent="Gagal membaca detail Recovery: "+e.message;}
 }
 
-async function setupSettingsPage(){document.getElementById("settingName").value=currentUser?.full_name||currentUser?.name||"Administrator ASAS";document.getElementById("profileForm")?.addEventListener("submit",e=>{e.preventDefault();const name=document.getElementById("settingName").value.trim();if(!name)return;currentUser={...(currentUser||{}),full_name:name};sessionStorage.setItem("asas_user",JSON.stringify(currentUser));document.getElementById("topUser").textContent=name;document.getElementById("profileMessage").className="msg ok";document.getElementById("profileMessage").textContent="Nama tampilan disimpan pada browser ini.";});document.getElementById("reloadYears")?.addEventListener("click",loadYears);document.getElementById("academicYearForm")?.addEventListener("submit",createAcademicYear);await loadYears();}
+async function setupSettingsPage(){document.getElementById("settingName").value=currentUser?.full_name||currentUser?.name||"Administrator ASAS";document.getElementById("profileForm")?.addEventListener("submit",e=>{e.preventDefault();const name=document.getElementById("settingName").value.trim();if(!name)return;currentUser={...(currentUser||{}),full_name:name};localStorage.setItem("asas_user",JSON.stringify(currentUser));document.getElementById("topUser").textContent=name;document.getElementById("profileMessage").className="msg ok";document.getElementById("profileMessage").textContent="Nama tampilan disimpan pada browser ini.";});document.getElementById("reloadYears")?.addEventListener("click",loadYears);document.getElementById("academicYearForm")?.addEventListener("submit",createAcademicYear);await loadYears();}
 async function createAcademicYear(event){event.preventDefault();const msg=document.getElementById("academicYearMessage"),btn=document.querySelector('#academicYearForm button[type="submit"]');const name=document.getElementById("newYearName").value.trim(),semester=document.getElementById("newYearSemester").value,start=document.getElementById("newYearStart").value||null,end=document.getElementById("newYearEnd").value||null;if(!name||!semester||!start||!end){msg.className="msg error";msg.textContent="Nama tahun ajaran, semester, tanggal mulai, dan tanggal selesai wajib diisi.";return;}if(end<start){msg.className="msg error";msg.textContent="Tanggal selesai tidak boleh lebih awal dari tanggal mulai.";return;}btn.disabled=true;msg.className="msg";msg.textContent="Menyimpan jadwal kalender akademik...";try{await apiRequest("rpc/admin_save_academic_calendar_period",{method:"POST",body:JSON.stringify({p_name:name,p_semester:semester,p_start_date:start,p_end_date:end})});msg.className="msg ok";msg.textContent="Jadwal kalender tersimpan. Sistem akan membuat semester secara otomatis saat tanggal mulai tiba.";document.getElementById("academicYearForm").reset();await loadYears();}catch(e){msg.className="msg error";msg.textContent="Gagal menyimpan jadwal. Pastikan migrasi kalender akademik sudah dijalankan. Detail: "+e.message;}finally{btn.disabled=false;}}
 async function loadYears(){const area=document.getElementById("yearTableArea"),calArea=document.getElementById("calendarTableArea");try{const years=await apiRequest("academic_years?select=*&order=start_date.desc.nullslast,name.desc,semester.asc");if(area){if(!years.length){area.className="empty-note";area.textContent="Belum ada semester yang terbentuk.";}else{area.className="table-wrap";area.innerHTML=`<table><thead><tr><th>Tahun Ajaran</th><th>Semester</th><th>Mulai</th><th>Selesai</th><th>Status</th></tr></thead><tbody>${years.map(y=>`<tr><td>${escapeHtml(y.name)}</td><td>${escapeHtml(y.semester)}</td><td>${escapeHtml(y.start_date||"—")}</td><td>${escapeHtml(y.end_date||"—")}</td><td>${y.is_active?'<span class="status">Aktif</span>':'Nonaktif'}</td></tr>`).join("")}</tbody></table>`;}}}catch(e){if(area){area.className="empty-note";area.textContent="Gagal memuat tahun ajaran: "+e.message;}}try{const rows=await apiRequest("asas_academic_calendar?select=*&order=start_date.asc");if(calArea){if(!rows.length){calArea.className="empty-note";calArea.textContent="Belum ada jadwal kalender. Tambahkan jadwal Ganjil dan Genap untuk setiap tahun ajaran.";}else{calArea.className="table-wrap";calArea.innerHTML=`<table><thead><tr><th>Tahun Ajaran</th><th>Semester</th><th>Mulai</th><th>Selesai</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.academic_year_name)}</td><td>${escapeHtml(r.semester)}</td><td>${escapeHtml(r.start_date)}</td><td>${escapeHtml(r.end_date)}</td></tr>`).join("")}</tbody></table>`;}}}catch(e){if(calArea){calArea.className="empty-note";calArea.textContent="Jadwal belum dapat dibaca. Jalankan migrasi kalender akademik terlebih dahulu. "+e.message;}}}
 let pendingPromotionPreview=null;
@@ -1202,15 +1208,25 @@ async function assignExamWaveStudent(event){
 
 function showApp(){document.getElementById("loginScreen").classList.add("hidden");document.getElementById("appScreen").classList.remove("hidden");document.getElementById("rolePill").textContent=currentRole==="admin"?"Administrator":"Siswa";document.getElementById("topUser").textContent=getUserName();const sidebar=document.getElementById("sidebar");sidebar.querySelectorAll("[data-page]").forEach(btn=>{const key=btn.dataset.page;btn.classList.toggle("hidden",currentRole==="admin"?(key==="studentExams"||key==="studentResults"):!(key==="dashboard"||key==="studentExams"||key==="studentResults"));});sidebar.querySelectorAll(".nav-group").forEach(group=>{const visible=[...group.querySelectorAll(".nav-btn[data-page]")].some(btn=>!btn.classList.contains("hidden"));group.classList.toggle("hidden",!visible);});renderPage("dashboard");}
 document.getElementById("sidebar").addEventListener("click",event=>{const toggle=event.target.closest(".nav-group-toggle");if(toggle){const group=toggle.closest(".nav-group");const opening=!group.classList.contains("open");document.querySelectorAll("#sidebar .nav-group").forEach(item=>{item.classList.remove("open");item.querySelector(".nav-group-toggle")?.setAttribute("aria-expanded","false");});if(opening){group.classList.add("open");toggle.setAttribute("aria-expanded","true");}return;}const btn=event.target.closest(".nav-btn[data-page]");if(!btn||btn.classList.contains("hidden"))return;event.preventDefault();renderPage(btn.dataset.page);});
-document.getElementById("logoutButton").addEventListener("click",function(){sessionStorage.removeItem("asas_session");sessionStorage.removeItem("asas_role");sessionStorage.removeItem("asas_user");currentUser=null;currentRole=null;if(examDeadlineTimer)clearInterval(examDeadlineTimer);document.getElementById("appScreen").classList.add("hidden");document.getElementById("loginScreen").classList.remove("hidden");form.reset();role.dispatchEvent(new Event("change"));setMessage("Anda telah keluar dari sistem.","ok");});
+document.getElementById("logoutButton").addEventListener("click",function(){localStorage.removeItem("asas_session");localStorage.removeItem("asas_role");localStorage.removeItem("asas_user");currentUser=null;currentRole=null;if(examDeadlineTimer)clearInterval(examDeadlineTimer);document.getElementById("appScreen").classList.add("hidden");document.getElementById("loginScreen").classList.remove("hidden");form.reset();role.dispatchEvent(new Event("change"));setMessage("Anda telah keluar dari sistem.","ok");});
+window.addEventListener("storage",event=>{
+ if(event.key==="asas_session"&&event.newValue===null){
+  currentUser=null;currentRole=null;
+  if(examDeadlineTimer)clearInterval(examDeadlineTimer);
+  document.getElementById("appScreen").classList.add("hidden");
+  document.getElementById("loginScreen").classList.remove("hidden");
+  form.reset();role.dispatchEvent(new Event("change"));
+  setMessage("Sesi telah berakhir atau Anda keluar dari tab lain.","ok");
+ }
+});
 role.dispatchEvent(new Event("change"));
 
-// Pulihkan sesi; perbarui access token yang kedaluwarsa memakai refresh token.
+// Pulihkan sesi bersama antar-tab; perbarui access token yang kedaluwarsa memakai refresh token.
 (async function restoreSession() {
   try {
     const savedSession = readSavedSession();
-    const savedRole = sessionStorage.getItem("asas_role");
-    const savedUser = sessionStorage.getItem("asas_user");
+    const savedRole = localStorage.getItem("asas_role");
+    const savedUser = localStorage.getItem("asas_user");
     if (!savedSession || !savedRole) return;
     if (!savedSession.access_token || !savedSession.refresh_token) throw new Error("Data sesi tidak lengkap");
     await refreshAuthSession(false);
@@ -1219,9 +1235,9 @@ role.dispatchEvent(new Event("change"));
     showApp();
   } catch (error) {
     console.warn("Sesi tidak dapat dipulihkan:", error.message);
-    sessionStorage.removeItem("asas_session");
-    sessionStorage.removeItem("asas_role");
-    sessionStorage.removeItem("asas_user");
+    localStorage.removeItem("asas_session");
+    localStorage.removeItem("asas_role");
+    localStorage.removeItem("asas_user");
   }
 })();
 </script>

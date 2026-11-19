@@ -976,24 +976,58 @@ document.getElementById("executePromotion")?.addEventListener("click",executeStu
 async function previewStudentPromotion(){const source=document.getElementById("promotionSourceYear").value,target=document.getElementById("promotionTargetYear").value,area=document.getElementById("promotionPreview"),meta=document.getElementById("promotionMeta"),run=document.getElementById("executePromotion");run.disabled=true;pendingPromotionPreview=null;if(!source||!target){meta.textContent="Pilih semester Genap sumber dan tahun Ganjil tujuan.";area.className="empty-note";area.textContent="Pilihan tahun belum valid.";return;}try{const [enrollments,classes,students,years]=await Promise.all([apiRequest("student_enrollments?select=student_id,class_id,academic_year_id&academic_year_id=eq."+encodeURIComponent(source)),apiRequest("classes?select=id,name,program_code,grade_number,academic_year_id"),apiRequest("students?select=id,nis,nisn,full_name,status&order=full_name.asc"),apiRequest("academic_years?select=id,name,semester")]);const sourceYear=years.find(y=>y.id===source);if(!sourceYear||sourceYear.semester!=="Genap")throw new Error("Tahun sumber harus semester Genap.");const targetName=target;const expectedTargetYear=nextAcademicYearName(sourceYear.name);if(targetName!==expectedTargetYear)throw new Error("Tahun tujuan harus merupakan tahun ajaran berikutnya setelah semester Genap sumber.");if(!/^\d{4}\/\d{4}$/.test(targetName))throw new Error("Tahun tujuan belum valid. Atur kalender akademik terlebih dahulu.");const decisions=await apiRequest("asas_student_promotion_decisions?select=student_id,decision&target_academic_year_name=eq."+encodeURIComponent(targetName));const rows=[],seen=new Set();for(const en of enrollments){if(seen.has(en.student_id))continue;seen.add(en.student_id);const st=students.find(x=>x.id===en.student_id),from=classes.find(x=>x.id===en.class_id);if(!st||!from||st.status&&st.status!=="aktif")continue;const max=maxGradeForProgram(from.program_code);if(!max){rows.push({student:st,from,label:"Perlu pemeriksaan paket",repeat:false});continue;}const prior=decisions.find(d=>d.student_id===st.id);const repeat=prior?.decision==="repeat";const label=Number(from.grade_number)>=max?(repeat?"Tinggal kelas terakhir":"Akan lulus"):(repeat?`Tetap di ${from.name}`:`Naik ke kelas ${Number(from.grade_number)+1}`);rows.push({student:st,from,label,repeat});}pendingPromotionPreview={source,target,targetName,rows};const ready=rows.length,repeatCount=rows.filter(x=>x.repeat).length;meta.textContent=`${ready} siswa ditemukan. ${repeatCount} siswa ditandai tinggal kelas.`;area.className="table-wrap";area.innerHTML=rows.length?`<table><thead><tr><th>Siswa</th><th>NIS</th><th>Kelas asal</th><th>Keputusan otomatis</th><th>Tinggal kelas?</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${escapeHtml(x.student.full_name)}</td><td>${escapeHtml(x.student.nis)}</td><td>${escapeHtml(x.from.name)}</td><td>${escapeHtml(x.label)}</td><td><input type="checkbox" data-repeat-student="${escapeHtml(x.student.id)}" ${x.repeat?"checked":""} style="width:auto"></td></tr>`).join("")}</tbody></table>`:"Tidak ada siswa aktif yang terdaftar pada tahun asal.";area.querySelectorAll("[data-repeat-student]").forEach(cb=>cb.addEventListener("change",()=>{const row=rows.find(x=>x.student.id===cb.dataset.repeatStudent);if(row){row.repeat=cb.checked;row.label=cb.checked?`Tetap di ${row.from.name}`:(Number(row.from.grade_number)>=maxGradeForProgram(row.from.program_code)?"Akan lulus":`Naik ke kelas ${Number(row.from.grade_number)+1}`);cb.closest("tr").children[3].textContent=row.label;}}));run.disabled=!rows.length||rows.some(x=>x.label==="Perlu pemeriksaan paket");}catch(e){area.className="empty-note";area.textContent="Gagal membuat pratinjau: "+e.message;meta.textContent="Pratinjau gagal.";}}
 async function executeStudentPromotion(){if(!pendingPromotionPreview)return;const {targetName,rows}=pendingPromotionPreview;if(rows.some(x=>x.label==="Perlu pemeriksaan paket")){alert("Perbaiki data paket/kelas siswa terlebih dahulu.");return;}const repeats=rows.filter(x=>x.repeat).length;if(!confirm(`Simpan keputusan untuk ${rows.length} siswa? ${repeats} siswa akan tinggal kelas. Siswa lainnya naik otomatis ketika tanggal mulai tahun ajaran tujuan tiba. Siswa kelas akhir akan lulus otomatis kecuali dicentang tinggal kelas.`))return;const btn=document.getElementById("executePromotion"),msg=document.getElementById("promotionMessage");btn.disabled=true;msg.className="msg";msg.textContent="Menyimpan keputusan siswa...";try{for(const row of rows){await apiRequest("rpc/admin_set_student_promotion_decision",{method:"POST",body:JSON.stringify({p_student_id:row.student.id,p_target_academic_year_name:targetName,p_decision:row.repeat?"repeat":"promote",p_note:row.repeat?"Tinggal kelas atas keputusan administrator":null})});}msg.className="msg ok";msg.textContent=`Keputusan tersimpan untuk ${rows.length} siswa. Kenaikan kelas akan diproses otomatis oleh server pada tanggal mulai tahun ajaran.`;await previewStudentPromotion();}catch(e){msg.className="msg error";msg.textContent="Gagal menyimpan keputusan: "+e.message;btn.disabled=false;}}
 
-let activeStudentAttempt=null,activeStudentQuestions=[],activeExamData=null,activeSessionId=null,examExitGuard=false,examDeadlineTimer=null,examAutosaveTimer=null,examAutosaveQueue=Promise.resolve(),examRecoveryBusy=false,examRecoveryLocked=false,examSubmitting=false,examNavigatingAway=false,autoSubmitTried=false,sessionScoreSummaries=[];
+let activeStudentAttempt=null,activeStudentQuestions=[],activeExamData=null,activeSessionId=null,activeExamMode="session",examExitGuard=false,examDeadlineTimer=null,examAutosaveTimer=null,examAutosaveQueue=Promise.resolve(),examRecoveryBusy=false,examRecoveryLocked=false,examSubmitting=false,examNavigatingAway=false,autoSubmitTried=false,sessionScoreSummaries=[];
 async function setupStudentExamsPage(){document.getElementById("reloadStudentExams")?.addEventListener("click",loadStudentExams);await loadStudentExams();}
 async function loadStudentExams(){
   const area=document.getElementById("studentExamArea"),meta=document.getElementById("studentExamMeta");
-  if(!area)return;area.className="empty-note";area.textContent="Memuat sesi ujian...";
+  if(!area)return;area.className="empty-note";area.textContent="Memuat daftar ujian...";
   try{
-    const rows=await apiRequest("rpc/student_list_available_exam_sessions",{method:"POST",body:"{}"});
-    const sessions=Array.isArray(rows)?rows:[];meta.textContent="Sesi tersedia: "+sessions.length;
-    if(!sessions.length){area.className="empty-note";area.textContent="Belum ada sesi ujian yang ditetapkan untuk kelasmu.";return;}
-    area.className="table-wrap";
-    area.innerHTML=`<table><thead><tr><th>Sesi Ujian</th><th>Progres</th><th>Mata Pelajaran</th><th>Mode</th><th>Aksi</th></tr></thead><tbody>${sessions.map(x=>{const done=x.progress_status==="completed",active=x.progress_status==="in_progress";const status=done?"Selesai":active?"Sedang dikerjakan":"Belum dimulai";const seq=active?`${x.current_sequence} dari ${x.total_subjects}`:`${x.total_subjects} mapel`;return `<tr><td><strong>${escapeHtml(x.title)}</strong></td><td>${escapeHtml(status)}</td><td>${escapeHtml(seq)}</td><td>${x.execution_mode==="available_computer"?"Komputer tersedia":"Gelombang terjadwal"}</td><td>${done?"—":`<button class="primary" style="width:auto;margin:0" type="button" data-open-session="${escapeHtml(x.session_id)}">Lihat Urutan</button>`}</td></tr>`;}).join("")}</tbody></table><p class="hint" style="text-align:left">Pilih mata pelajaran yang siap dikerjakan. Timer baru dimulai saat tombol Kerjakan ditekan.</p>`;
+    const [sessionResult,flexResult]=await Promise.allSettled([
+      apiRequest("rpc/student_list_available_exam_sessions",{method:"POST",body:"{}"}),
+      apiRequest("rpc/student_list_available_flexible_exams",{method:"POST",body:"{}"})
+    ]);
+    const sessions=sessionResult.status==="fulfilled"&&Array.isArray(sessionResult.value)?sessionResult.value:[];
+    const flex=flexResult.status==="fulfilled"&&Array.isArray(flexResult.value)?flexResult.value:[];
+    meta.textContent=`Sesi ujian: ${sessions.length} · Jadwal fleksibel: ${flex.length}`;
+    const sessionHtml=sessions.length?`<h3>Sesi Ujian</h3><div class="table-wrap"><table><thead><tr><th>Sesi Ujian</th><th>Progres</th><th>Mata Pelajaran</th><th>Mode</th><th>Aksi</th></tr></thead><tbody>${sessions.map(x=>{const done=x.progress_status==="completed",active=x.progress_status==="in_progress";const status=done?"Selesai":active?"Sedang dikerjakan":"Belum dimulai";const seq=active?`${x.current_sequence} dari ${x.total_subjects}`:`${x.total_subjects} mapel`;return `<tr><td><strong>${escapeHtml(x.title)}</strong></td><td>${escapeHtml(status)}</td><td>${escapeHtml(seq)}</td><td>${x.execution_mode==="available_computer"?"Komputer tersedia":"Gelombang terjadwal"}</td><td>${done?"—":`<button class="primary" style="width:auto;margin:0" type="button" data-open-session="${escapeHtml(x.session_id)}">Lihat Urutan</button>`}</td></tr>`;}).join("")}</tbody></table></div>`:`<p class="hint">Belum ada sesi ujian.</p>`;
+    const flexHtml=flex.length?`<h3 style="margin-top:22px">Jadwal Fleksibel</h3><div class="table-wrap"><table><thead><tr><th>Mata Pelajaran</th><th>Periode</th><th>Jam Akses</th><th>Durasi</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${flex.map(x=>{const resume=x.can_resume===true,start=x.can_start===true;const attempt=x.attempt_status||"";const status=resume?"Sedang dikerjakan":start?"Siap dikerjakan":attempt==="submitted"||attempt==="auto_submitted"||attempt==="graded"?"Sudah dikumpulkan":"Belum waktunya";const date=v=>v?new Date(v+"T00:00:00").toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric"}):"—";const time=v=>String(v||"").slice(0,5);const action=resume||start?`<button class="primary" style="width:auto;margin:0" type="button" data-flex-schedule="${escapeHtml(x.schedule_id)}" data-flex-resume="${resume?"1":"0"}">${resume?"Lanjutkan":"Kerjakan"}</button>`:"—";return `<tr><td><strong>${escapeHtml(x.exam_title||"Ujian")}</strong></td><td>${date(x.start_date)} – ${date(x.end_date)}</td><td>${time(x.daily_start_time)}–${time(x.daily_end_time)} WIB</td><td>${Number(x.duration_minutes)||0} menit</td><td>${status}</td><td>${action}</td></tr>`;}).join("")}</tbody></table></div>`:`<p class="hint">Belum ada jadwal fleksibel untuk kelasmu.</p>`;
+    area.className="panel";area.innerHTML=sessionHtml+flexHtml+`<p class="hint" style="text-align:left">Jadwal fleksibel dapat dimulai pada tanggal dan jam akses yang tertera. Jika ujian sudah dimulai, gunakan tombol Lanjutkan.</p>`;
     area.querySelectorAll("[data-open-session]").forEach(b=>b.addEventListener("click",()=>startStudentExamSession(b.dataset.openSession)));
-  }catch(e){meta.textContent="Sesi belum dapat dimuat";area.className="empty-note";area.textContent="Tidak dapat memuat sesi: "+e.message+". Pastikan fungsi student_list_available_exam_sessions sudah dipasang.";}
+    area.querySelectorAll("[data-flex-schedule]").forEach(b=>b.addEventListener("click",()=>startStudentFlexibleExam(b.dataset.flexSchedule,b.dataset.flexResume==="1")));
+    if(sessionResult.status==="rejected"&&flexResult.status==="rejected")throw sessionResult.reason||flexResult.reason;
+    if(flexResult.status==="rejected")console.warn("Jadwal fleksibel gagal dimuat:",flexResult.reason);
+  }catch(e){meta.textContent="Daftar ujian belum dapat dimuat";area.className="empty-note";area.textContent="Tidak dapat memuat daftar ujian: "+e.message;}
 }
+async function startStudentFlexibleExam(scheduleId,resume=false){
+  const area=document.getElementById("studentExamArea"),runner=document.getElementById("examRunner");
+  try{
+    activeExamMode="flexible";activeSessionId=null;sessionScoreSummaries=[];
+    let started;
+    if(resume){const rows=await apiRequest("rpc/student_list_available_flexible_exams",{method:"POST",body:"{}"});const row=(Array.isArray(rows)?rows:[]).find(x=>x.schedule_id===scheduleId);if(!row?.attempt_id)throw new Error("Percobaan yang akan dilanjutkan tidak ditemukan. Muat ulang daftar ujian.");started={attempt_id:row.attempt_id};}
+    else started=await apiRequest("rpc/student_start_flexible_exam",{method:"POST",body:JSON.stringify({p_schedule_id:scheduleId})});
+    if(!started?.attempt_id)throw new Error(started?.message||"Server tidak mengembalikan ID percobaan.");
+    await loadActiveFlexiblePayload(started.attempt_id);
+    area.classList.add("hidden");runner.classList.remove("hidden");document.body.classList.add("exam-focus");examNavigatingAway=false;examExitGuard=true;renderStudentExamRunner();enterExamFullscreen();
+  }catch(e){activeExamMode="session";alert("Tidak dapat memulai ujian fleksibel: "+e.message);await loadStudentExams();}
+}
+async function loadActiveFlexiblePayload(attemptId){
+  const data=await apiRequest("rpc/student_get_flexible_exam_payload",{method:"POST",body:JSON.stringify({p_attempt_id:attemptId})});
+  if(!data?.attempt_id||!data?.deadline)throw new Error("Data percobaan atau batas waktu tidak lengkap dari server.");
+  const picked=await apiRequest("rpc/student_get_attempt_question_set",{method:"POST",body:JSON.stringify({p_attempt_id:data.attempt_id})});
+  const pickedIds=Array.isArray(picked)?picked:(Array.isArray(picked?.question_ids)?picked.question_ids:[]);
+  if(!pickedIds.length)throw new Error("Server tidak mengembalikan paket soal untuk percobaan ini.");
+  const questionMap=new Map((data.questions||[]).map(q=>[String(q.id),q]));const pickedQuestions=pickedIds.map(id=>questionMap.get(String(id))).filter(Boolean);
+  if(pickedQuestions.length!==pickedIds.length)throw new Error("Sebagian soal tidak ditemukan pada data ujian.");
+  activeExamData={mode:"flexible",session_id:null,exam_id:data.exam_id,title:data.subject_name||data.exam_title,duration_minutes:data.duration_minutes,deadline:data.deadline,server_now:data.server_now,serverOffset:new Date(data.server_now).getTime()-Date.now(),sequence_number:1,total_subjects:1};
+  activeStudentAttempt={id:data.attempt_id,started_at:data.started_at};autoSubmitTried=false;
+  activeStudentQuestions=pickedQuestions.map(q=>({...q,options:Array.isArray(q.options)?q.options:[],choice:q.saved_answer?.selected_option_label||"",text:q.saved_answer?.answer_text||""}));
+  if(!activeStudentQuestions.length)throw new Error("Ujian ini belum memiliki soal.");
+}
+
 async function startStudentExamSession(sessionId){
   const area=document.getElementById("studentExamArea"),runner=document.getElementById("examRunner");
   try{
-    activeSessionId=sessionId;sessionScoreSummaries=[];
+    activeSessionId=sessionId;activeExamMode="session";sessionScoreSummaries=[];
     await renderStudentSessionSubjects(sessionId);
     runner.classList.add("hidden");area.classList.remove("hidden");
   }catch(e){alert("Tidak dapat memuat urutan mata pelajaran: "+e.message);activeSessionId=null;}
@@ -1035,7 +1069,7 @@ async function loadActiveSessionPayload(){
   const questionMap=new Map((data.questions||[]).map(q=>[String(q.id),q]));
   const pickedQuestions=pickedIds.map(id=>questionMap.get(String(id))).filter(Boolean);
   if(pickedQuestions.length!==pickedIds.length)throw new Error("Sebagian soal acak tidak ditemukan pada data ujian. Hubungi administrator.");
-  activeExamData={session_id:data.session_id,exam_id:data.exam_id,title:data.subject_name||data.exam_title,duration_minutes:data.duration_minutes,deadline:data.deadline,server_now:data.server_now,serverOffset:new Date(data.server_now).getTime()-Date.now(),sequence_number:data.sequence_number,total_subjects:data.total_subjects};
+  activeExamData={mode:"session",session_id:data.session_id,exam_id:data.exam_id,title:data.subject_name||data.exam_title,duration_minutes:data.duration_minutes,deadline:data.deadline,server_now:data.server_now,serverOffset:new Date(data.server_now).getTime()-Date.now(),sequence_number:data.sequence_number,total_subjects:data.total_subjects};
   activeStudentAttempt={id:data.attempt_id,started_at:data.started_at};autoSubmitTried=false;
   activeStudentQuestions=pickedQuestions.map(q=>({...q,options:Array.isArray(q.options)?q.options:[],choice:q.saved_answer?.selected_option_label||"",text:q.saved_answer?.answer_text||""}));
   if(!activeStudentQuestions.length)throw new Error("Mata pelajaran ini belum memiliki soal.");
@@ -1052,7 +1086,7 @@ function scheduleCurrentAnswerAutosave(question){
 async function flushAutosaveQueue(){if(examAutosaveTimer){clearTimeout(examAutosaveTimer);examAutosaveTimer=null;}await examAutosaveQueue;}
 function renderStudentExamRunner(){
   const runner=document.getElementById("examRunner");if(!runner||!activeExamData)return;
-  runner.innerHTML=`<div id="examWorkArea" class="panel"><div class="toolbar"><h2 style="flex:1;margin:0">${escapeHtml(activeExamData.title)}</h2><strong id="examTimer">--:--</strong></div><p class="hint">Mata pelajaran ${activeExamData.sequence_number} dari ${activeExamData.total_subjects}. Jawaban disimpan otomatis. Jika keluar dari layar penuh, jawaban tersimpan diamankan ke Recovery dan tampilan kembali ke soal pertama dengan sisa waktu yang sama.</p><div id="examQuestionArea"></div><div class="toolbar"><button class="secondary" id="resumeFullscreen" type="button">Masuk Layar Penuh</button><button class="secondary" id="saveCurrentAnswer" type="button">Simpan Jawaban</button><button class="secondary" id="prevExamQuestion" type="button">Sebelumnya</button><button class="primary" id="nextExamQuestion" type="button">Berikutnya</button><button class="primary" id="submitStudentExam" type="button">Selesaikan Mapel</button></div><p id="examSaveMessage" class="msg" role="status"></p></div>`;
+  runner.innerHTML=`<div id="examWorkArea" class="panel"><div class="toolbar"><h2 style="flex:1;margin:0">${escapeHtml(activeExamData.title)}</h2><strong id="examTimer">--:--</strong></div><p class="hint">${activeExamData.mode==="flexible"?"Ujian dengan jadwal fleksibel.":`Mata pelajaran ${activeExamData.sequence_number} dari ${activeExamData.total_subjects}.`} Jawaban disimpan otomatis. Jika keluar dari layar penuh, jawaban tersimpan diamankan ke Recovery dan tampilan kembali ke soal pertama dengan sisa waktu yang sama.</p><div id="examQuestionArea"></div><div class="toolbar"><button class="secondary" id="resumeFullscreen" type="button">Masuk Layar Penuh</button><button class="secondary" id="saveCurrentAnswer" type="button">Simpan Jawaban</button><button class="secondary" id="prevExamQuestion" type="button">Sebelumnya</button><button class="primary" id="nextExamQuestion" type="button">Berikutnya</button><button class="primary" id="submitStudentExam" type="button">Selesaikan Mapel</button></div><p id="examSaveMessage" class="msg" role="status"></p></div>`;
   let idx=0;
   function draw(){
     const q=activeStudentQuestions[idx],a=document.getElementById("examQuestionArea");a.dataset.index=String(idx);a.dataset.questionId=q.id;
@@ -1084,6 +1118,12 @@ async function submitStudentExam(auto=false){
   try{
     if(!auto){await flushAutosaveQueue();for(const q of activeStudentQuestions)await saveAnswerPayload(buildAnswerPayload(q));}
     else await flushAutosaveQueue();
+    if(activeExamMode==="flexible"){
+      await apiRequest("rpc/student_submit_flexible_exam",{method:"POST",body:JSON.stringify({p_attempt_id:activeStudentAttempt.id})});
+      if(examDeadlineTimer)clearInterval(examDeadlineTimer);
+      examExitGuard=false;document.removeEventListener("fullscreenchange",onExamFullscreenChange);window.removeEventListener("beforeunload",onExamBeforeUnload);document.removeEventListener("keydown",onExamRefreshKey,true);document.exitFullscreen?.().catch(()=>{});
+      activeStudentAttempt=null;activeExamData=null;activeStudentQuestions=[];activeSessionId=null;activeExamMode="session";examSubmitting=false;examRecoveryLocked=false;document.body.classList.remove("exam-focus");document.getElementById("examRunner").classList.add("hidden");document.getElementById("studentExamArea").classList.remove("hidden");alert("Ujian berhasil dikumpulkan.");await loadStudentExams();return;
+    }
     const graded=await apiRequest("rpc/submit_and_grade_exam",{method:"POST",body:JSON.stringify({p_attempt_id:activeStudentAttempt.id})});
     sessionScoreSummaries.push({subject:activeExamData.title,score:graded?.total_score??graded?.objective_score??null,max:graded?.max_score??null,is_final:graded?.is_final!==false});
     const advanced=await apiRequest("rpc/advance_exam_session",{method:"POST",body:JSON.stringify({p_session_id:activeSessionId})});
@@ -1116,7 +1156,7 @@ function setExamRunnerLocked(locked){
   runner.setAttribute("aria-busy",locked?"true":"false");
 }
 async function onExamFullscreenChange(){
-  if(!examExitGuard||!activeStudentAttempt||!activeSessionId||document.fullscreenElement||examRecoveryBusy||examRecoveryLocked||examSubmitting)return;
+  if(!examExitGuard||!activeStudentAttempt||document.fullscreenElement||examRecoveryBusy||examRecoveryLocked||examSubmitting)return;
   // Beri kesempatan F5/refresh dikenali; refresh tidak boleh membuat Recovery.
   await new Promise(resolve=>setTimeout(resolve,80));if(examNavigatingAway)return;
   examRecoveryBusy=true;examRecoveryLocked=true;setExamRunnerLocked(true);
@@ -1127,7 +1167,9 @@ async function onExamFullscreenChange(){
     // Simpan perubahan terakhir yang masih ada di memori, khusus untuk snapshot ini.
     for(const q of activeStudentQuestions){const payload=buildAnswerPayload(q);if(payload.is_answered)await saveAnswerPayload(payload,true);}
     const eventId=crypto.randomUUID?crypto.randomUUID():String(Date.now())+"-"+Math.random().toString(16).slice(2);
-    const result=await apiRequest("rpc/recover_active_session_answers",{method:"POST",body:JSON.stringify({p_session_id:activeSessionId,p_event_type:"fullscreen_exit",p_event_reason:"Fullscreen keluar saat ujian",p_event_metadata:{event_id:eventId,source:"fullscreenchange"}})});
+    const result=activeExamMode==="flexible"
+      ?await apiRequest("rpc/recover_flexible_exam_answers",{method:"POST",body:JSON.stringify({p_attempt_id:activeStudentAttempt.id,p_event_type:"fullscreen_exit",p_event_reason:"Fullscreen keluar saat ujian",p_event_metadata:{event_id:eventId,source:"fullscreenchange"}})})
+      :await apiRequest("rpc/recover_active_session_answers",{method:"POST",body:JSON.stringify({p_session_id:activeSessionId,p_event_type:"fullscreen_exit",p_event_reason:"Fullscreen keluar saat ujian",p_event_metadata:{event_id:eventId,source:"fullscreenchange"}})});
     if(!["recovery_saved","already_processed","no_answers"].includes(result?.status))throw new Error(result?.message||"Status Recovery dari server tidak dikenali.");
     // Setelah RPC berhasil, hentikan semua state jawaban lama dan kembali ke soal pertama.
     // Tidak ada jawaban kosong yang dibuat di database; jawaban baru akan tersimpan normal.
